@@ -45,15 +45,13 @@
 #endif
 
 namespace jsoncons { 
-namespace detail { 
+namespace binary { 
 
     struct uint128_holder
     {
         uint64_t lo;
         uint64_t hi;
     };
-
-    namespace detail {
 
     static inline bool add_check_overflow(std::size_t v1, std::size_t v2, std::size_t *r)
     {
@@ -64,8 +62,6 @@ namespace detail {
         *r = v1 + v2;
         return v1 > v1 + v2;
     #endif
-    }
-
     }
 
     #if defined(__apple_build_version__) && ((__clang_major__ < 8) || ((__clang_major__ == 8) && (__clang_minor__ < 1)))
@@ -224,7 +220,7 @@ namespace detail {
         return val2;
     }
 
-} // detail
+} // binary
 } // jsoncons
 
 #endif

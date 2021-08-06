@@ -232,7 +232,7 @@ public:
     }
 
     template<class T, class CharT_ = CharT>
-    typename std::enable_if<detail::is_basic_string<T>::value && std::is_same<typename T::value_type, CharT_>::value, T>::type
+    typename std::enable_if<type_traits::is_basic_string<T>::value && std::is_same<typename T::value_type, CharT_>::value, T>::type
     get(std::error_code& ec) const
     {
         converter<T> conv;
@@ -280,7 +280,7 @@ public:
     }
 
     template<class T, class CharT_ = CharT>
-    typename std::enable_if<detail::is_basic_string_view<T>::value && std::is_same<typename T::value_type, CharT_>::value, T>::type
+    typename std::enable_if<type_traits::is_basic_string_view<T>::value && std::is_same<typename T::value_type, CharT_>::value, T>::type
         get(std::error_code& ec) const
     {
         T s;
@@ -315,7 +315,7 @@ public:
     }
 
     template<class T>
-    typename std::enable_if<detail::is_list_like<T>::value &&
+    typename std::enable_if<type_traits::is_list_like<T>::value &&
                             std::is_same<typename T::value_type,uint8_t>::value,T>::type
     get(std::error_code& ec) const
     {
@@ -333,20 +333,21 @@ public:
     }
 
     template <class IntegerType>
-    typename std::enable_if<detail::is_integer<IntegerType>::value, IntegerType>::type
+    typename std::enable_if<type_traits::is_integer<IntegerType>::value, IntegerType>::type
     get(std::error_code& ec) const
     {
         switch (event_type_)
         {
             case staj_event_type::string_value:
             {
-                auto result = jsoncons::detail::to_integer<IntegerType>(value_.string_data_, length_);
+                IntegerType val;
+                auto result = jsoncons::detail::to_integer(value_.string_data_, length_, val);
                 if (!result)
                 {
                     ec = conv_errc::not_integer;
                     return IntegerType();
                 }
-                return result.value();
+                return val;
             }
             case staj_event_type::half_value:
                 return static_cast<IntegerType>(value_.half_value_);
@@ -372,7 +373,7 @@ public:
     }
 
     template<class T>
-    typename std::enable_if<detail::is_bool<T>::value, T>::type
+    typename std::enable_if<type_traits::is_bool<T>::value, T>::type
         get(std::error_code& ec) const
     {
         return as_bool(ec);
@@ -414,7 +415,7 @@ private:
                 return static_cast<double>(value_.uint64_value_);
             case staj_event_type::half_value:
             {
-                double x = jsoncons::detail::decode_half(value_.half_value_);
+                double x = binary::decode_half(value_.half_value_);
                 return static_cast<double>(x);
             }
             default:

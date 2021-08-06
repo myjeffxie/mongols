@@ -13,7 +13,8 @@
 #include <jsoncons_ext/jsonpointer/jsonpointer.hpp>
 #include <jsoncons_ext/jsonschema/subschema.hpp>
 #include <jsoncons_ext/jsonschema/schema_keywords.hpp>
-#include <jsoncons_ext/jsonschema/json_schema_draft7.hpp>
+#include <jsoncons_ext/jsonschema/schema_draft7.hpp>
+#include <jsoncons_ext/jsonschema/schema_version.hpp>
 #include <cassert>
 #include <set>
 #include <sstream>
@@ -115,7 +116,7 @@ namespace jsonschema {
         {
             if (uri.path() == "/draft-07/schema") 
             {
-                return jsoncons::jsonschema::json_schema_draft7<Json>::get_schema();
+                return jsoncons::jsonschema::schema_draft7<Json>::get_schema();
             }
 
             JSONCONS_THROW(jsonschema::schema_error("Don't know how to load JSON Schema " + std::string(uri.base())));
@@ -232,7 +233,7 @@ namespace jsonschema {
                                          const std::vector<uri_wrapper>& uris, 
                                          std::set<std::string>& keywords) override
         {
-            auto sch_orig = jsoncons::make_unique<number_keyword<Json,int64_t>>(schema, uris, keywords);
+            auto sch_orig = jsoncons::make_unique<integer_keyword<Json>>(schema, uris, keywords);
             auto sch = sch_orig.get();
             subschemas_.emplace_back(std::move(sch_orig));
             return sch;
@@ -242,7 +243,7 @@ namespace jsonschema {
                                         const std::vector<uri_wrapper>& uris, 
                                         std::set<std::string>& keywords) override
         {
-            auto sch_orig = jsoncons::make_unique<number_keyword<Json,double>>(schema, uris, keywords);
+            auto sch_orig = jsoncons::make_unique<number_keyword<Json>>(schema, uris, keywords);
             auto sch = sch_orig.get();
             subschemas_.emplace_back(std::move(sch_orig));
             return sch;
@@ -351,6 +352,25 @@ namespace jsonschema {
                 }
             }
             return sch;
+        }
+
+        void load_root(const Json& sch)
+        {
+            if (sch.is_object())
+            {
+                auto it = sch.find("$schema");
+                if (it != sch.object_range().end())
+                {
+                    auto sv = it->value().as_string_view();
+                    if (!schema_version::contains(sv))
+                    {
+                        std::string message("Unsupported schema version ");
+                        message.append(sv.data(), sv.size());
+                        JSONCONS_THROW(schema_error(message));
+                    }
+                }
+            }
+            load(sch);
         }
 
         void load(const Json& sch)
@@ -509,17 +529,17 @@ namespace jsonschema {
     std::shared_ptr<json_schema<Json>> make_schema(const Json& schema)
     {
         schema_loader<Json> loader{default_uri_resolver<Json>()};
-        loader.load(schema);
+        loader.load_root(schema);
 
         return loader.get_schema();
     }
 
     template <class Json,class URIResolver>
-    typename std::enable_if<jsoncons::detail::is_unary_function_object_exact<URIResolver,Json,std::string>::value,std::shared_ptr<json_schema<Json>>>::type
+    typename std::enable_if<type_traits::is_unary_function_object_exact<URIResolver,Json,std::string>::value,std::shared_ptr<json_schema<Json>>>::type
     make_schema(const Json& schema, const URIResolver& resolver)
     {
         schema_loader<Json> loader(resolver);
-        loader.load(schema);
+        loader.load_root(schema);
 
         return loader.get_schema();
     }

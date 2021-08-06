@@ -17,7 +17,7 @@
 #include <jsoncons/json_type_traits.hpp>
 #include <jsoncons/staj_cursor.hpp>
 #include <jsoncons/conv_error.hpp>
-#include <jsoncons/detail/more_type_traits.hpp>
+#include <jsoncons/more_type_traits.hpp>
 
 namespace jsoncons {
 
@@ -47,7 +47,7 @@ namespace jsoncons {
 
     template <class T, class CharT>
     struct decode_traits<T,CharT,
-        typename std::enable_if<detail::is_primitive<T>::value
+        typename std::enable_if<type_traits::is_primitive<T>::value
     >::type>
     {
         template <class Json,class TempAllocator>
@@ -64,7 +64,7 @@ namespace jsoncons {
 
     template <class T, class CharT>
     struct decode_traits<T,CharT,
-        typename std::enable_if<detail::is_basic_string<T>::value &&
+        typename std::enable_if<type_traits::is_basic_string<T>::value &&
                                 std::is_same<typename T::value_type,CharT>::value
     >::type>
     {
@@ -80,7 +80,7 @@ namespace jsoncons {
 
     template <class T, class CharT>
     struct decode_traits<T,CharT,
-        typename std::enable_if<detail::is_basic_string<T>::value &&
+        typename std::enable_if<type_traits::is_basic_string<T>::value &&
                                 !std::is_same<typename T::value_type,CharT>::value
     >::type>
     {
@@ -93,7 +93,7 @@ namespace jsoncons {
             T s;
             if (!ec)
             {
-                unicons::convert(val.begin(), val.end(), std::back_inserter(s));
+                unicode_traits::convert(val.data(), val.size(), s);
             }
             return s;
         }
@@ -147,9 +147,9 @@ namespace jsoncons {
     template <class T, class CharT>
     struct decode_traits<T,CharT,
         typename std::enable_if<!is_json_type_traits_declared<T>::value && 
-                 jsoncons::detail::is_list_like<T>::value &&
-                 jsoncons::detail::is_back_insertable<T>::value &&
-                 !detail::is_typed_array<T>::value 
+                 type_traits::is_list_like<T>::value &&
+                 type_traits::is_back_insertable<T>::value &&
+                 !type_traits::is_typed_array<T>::value 
     >::type>
     {
         using value_type = typename T::value_type;
@@ -265,7 +265,7 @@ namespace jsoncons {
 
         bool visit_half_(std::false_type, uint16_t value)
         {
-            v_.push_back(static_cast<value_type>(jsoncons::detail::decode_half(value)));
+            v_.push_back(static_cast<value_type>(binary::decode_half(value)));
             return true;
         }
 
@@ -291,9 +291,9 @@ namespace jsoncons {
     template <class T, class CharT>
     struct decode_traits<T,CharT,
         typename std::enable_if<!is_json_type_traits_declared<T>::value && 
-                 jsoncons::detail::is_list_like<T>::value &&
-                 jsoncons::detail::is_back_insertable_byte_container<T>::value &&
-                 jsoncons::detail::is_typed_array<T>::value
+                 type_traits::is_list_like<T>::value &&
+                 type_traits::is_back_insertable_byte_container<T>::value &&
+                 type_traits::is_typed_array<T>::value
     >::type>
     {
         using value_type = typename T::value_type;
@@ -347,10 +347,10 @@ namespace jsoncons {
     template <class T, class CharT>
     struct decode_traits<T,CharT,
         typename std::enable_if<!is_json_type_traits_declared<T>::value && 
-                 jsoncons::detail::is_list_like<T>::value &&
-                 jsoncons::detail::is_back_insertable<T>::value &&
-                 !jsoncons::detail::is_back_insertable_byte_container<T>::value &&
-                 jsoncons::detail::is_typed_array<T>::value
+                 type_traits::is_list_like<T>::value &&
+                 type_traits::is_back_insertable<T>::value &&
+                 !type_traits::is_back_insertable_byte_container<T>::value &&
+                 type_traits::is_typed_array<T>::value
     >::type>
     {
         using value_type = typename T::value_type;
@@ -387,9 +387,9 @@ namespace jsoncons {
     template <class T, class CharT>
     struct decode_traits<T,CharT,
         typename std::enable_if<!is_json_type_traits_declared<T>::value && 
-                 jsoncons::detail::is_list_like<T>::value &&
-                 !jsoncons::detail::is_back_insertable<T>::value &&
-                 jsoncons::detail::is_insertable<T>::value 
+                 type_traits::is_list_like<T>::value &&
+                 !type_traits::is_back_insertable<T>::value &&
+                 type_traits::is_insertable<T>::value 
     >::type>
     {
         using value_type = typename T::value_type;
@@ -461,8 +461,8 @@ namespace jsoncons {
     template <class T, class CharT>
     struct decode_traits<T,CharT,
         typename std::enable_if<!is_json_type_traits_declared<T>::value && 
-                                jsoncons::detail::is_map_like<T>::value &&
-                                jsoncons::detail::is_constructible_from_const_pointer_and_size<typename T::key_type>::value
+                                type_traits::is_map_like<T>::value &&
+                                type_traits::is_constructible_from_const_pointer_and_size<typename T::key_type>::value
     >::type>
     {
         using mapped_type = typename T::mapped_type;
@@ -503,7 +503,7 @@ namespace jsoncons {
     template <class T, class CharT>
     struct decode_traits<T,CharT,
         typename std::enable_if<!is_json_type_traits_declared<T>::value && 
-                                jsoncons::detail::is_map_like<T>::value &&
+                                type_traits::is_map_like<T>::value &&
                                 std::is_integral<typename T::key_type>::value
     >::type>
     {
@@ -533,10 +533,16 @@ namespace jsoncons {
                 }
                 auto s = cursor.current().template get<jsoncons::basic_string_view<typename Json::char_type>>(ec);
                 if (ec) return val;
-                auto key = jsoncons::detail::to_integer<key_type>(s.data(), s.size()); 
+                key_type n{0};
+                auto r = jsoncons::detail::to_integer(s.data(), s.size(), n); 
+                if (r.ec != jsoncons::detail::to_integer_errc())
+                {
+                    ec = json_errc::invalid_number;
+                    return val;
+                }
                 cursor.next(ec);
                 if (ec) return val;
-                val.emplace(key.value(),decode_traits<mapped_type,CharT>::decode(cursor, decoder, ec));
+                val.emplace(n, decode_traits<mapped_type,CharT>::decode(cursor, decoder, ec));
                 cursor.next(ec);
             }
             return val;

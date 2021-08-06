@@ -31,6 +31,8 @@ namespace jsonschema {
     public:
         using schema_pointer = typename schema_keyword<Json>::schema_pointer;
 
+        virtual ~schema_builder() = default;
+
         virtual schema_pointer build(const Json& schema,
                                      const std::vector<uri_wrapper>& uris,
                                      const std::vector<std::string>& keys) = 0;
@@ -109,7 +111,7 @@ namespace jsonschema {
     {
         if (content_media_type == "application/Json")
         {
-            json_reader reader(content);
+            json_string_reader reader(content);
             std::error_code ec;
             reader.read(ec);
 
@@ -307,7 +309,7 @@ namespace jsonschema {
 
             if (min_length_) 
             {
-                std::size_t length = unicons::u32_length(content.begin(), content.end());
+                std::size_t length = unicode_traits::count_codepoints(content.data(), content.size());
                 if (length < *min_length_) 
                 {
                     reporter.error(validation_output(instance_location.string(), std::string("Expected minLength: ") + std::to_string(*min_length_)
@@ -321,7 +323,7 @@ namespace jsonschema {
 
             if (max_length_) 
             {
-                std::size_t length = unicons::u32_length(content.begin(), content.end());
+                std::size_t length = unicode_traits::count_codepoints(content.data(), content.size());
                 if (length > *max_length_)
                 {
                     reporter.error(validation_output(instance_location.string(), std::string("Expected maxLength: ") + std::to_string(*max_length_)
@@ -521,8 +523,20 @@ namespace jsonschema {
         }
     };
 
+    template <class T, class Json>
+    T get_number(const Json& val, const string_view& keyword) 
+    {
+        if (!val.is_number())
+        {
+            std::string message(keyword);
+            message.append(" must be a number value");
+            JSONCONS_THROW(schema_error(message));
+        }
+        return val.template as<T>();
+    }
+
     template <class Json,class T>
-    class number_keyword : public schema_keyword<Json>
+    class numericic_type_keywords : public schema_keyword<Json>
     {
         using schema_pointer = typename schema_keyword<Json>::schema_pointer;
 
@@ -538,7 +552,7 @@ namespace jsonschema {
         std::string absolute_multiple_of_location_;
 
     public:
-        number_keyword(const Json& sch, 
+        numericic_type_keywords(const Json& sch, 
                     const std::vector<uri_wrapper>& uris, 
                     std::set<std::string>& keywords)
             : schema_keyword<Json>((!uris.empty() && uris.back().is_absolute()) ? uris.back().string() : ""), 
@@ -547,7 +561,7 @@ namespace jsonschema {
             auto it = sch.find("maximum");
             if (it != sch.object_range().end()) 
             {
-                maximum_ = it->value().template as<T>();
+                maximum_ = get_number<T>(it->value(), "maximum");
                 absolute_maximum_location_ = make_absolute_keyword_location(uris,"maximum");
                 keywords.insert("maximum");
             }
@@ -555,7 +569,7 @@ namespace jsonschema {
             it = sch.find("minimum");
             if (it != sch.object_range().end()) 
             {
-                minimum_ = it->value().template as<T>();
+                minimum_ = get_number<T>(it->value(), "minimum");
                 absolute_minimum_location_ = make_absolute_keyword_location(uris,"minimum");
                 keywords.insert("minimum");
             }
@@ -563,7 +577,7 @@ namespace jsonschema {
             it = sch.find("exclusiveMaximum");
             if (it != sch.object_range().end()) 
             {
-                exclusive_maximum_ = it->value().template as<T>();
+                exclusive_maximum_ = get_number<T>(it->value(), "exclusiveMaximum");
                 absolute_exclusive_maximum_location_ = make_absolute_keyword_location(uris,"exclusiveMaximum");
                 keywords.insert("exclusiveMaximum");
             }
@@ -571,7 +585,7 @@ namespace jsonschema {
             it = sch.find("exclusiveMinimum");
             if (it != sch.object_range().end()) 
             {
-                exclusive_minimum_ = it->value().template as<T>();
+                exclusive_minimum_ = get_number<T>(it->value(), "exclusiveMinimum");
                 absolute_exclusive_minimum_location_ = make_absolute_keyword_location(uris,"exclusiveMinimum");
                 keywords.insert("exclusiveMinimum");
             }
@@ -579,29 +593,19 @@ namespace jsonschema {
             it = sch.find("multipleOf");
             if (it != sch.object_range().end()) 
             {
-                multiple_of_ = it->value().template as<double>();
+                multiple_of_ = get_number<double>(it->value(), "multipleOf");
                 absolute_multiple_of_location_ = make_absolute_keyword_location(uris,"multipleOf");
                 keywords.insert("multipleOf");
             }
         }
 
-    private:
+    protected:
 
-        void do_validate(const uri_wrapper& instance_location, 
-                         const Json& instance, 
-                         error_reporter& reporter, 
-                         Json&) const override
+        void apply_kewords(T value,
+                           const uri_wrapper& instance_location, 
+                           const Json& instance, 
+                           error_reporter& reporter) const 
         {
-            T value = instance.template as<T>(); 
-            if (Json(value) != instance)
-            {
-                reporter.error(validation_output(instance_location.string(), "Instance is not a number", "number", this->absolute_keyword_location()));
-                if (reporter.fail_early())
-                {
-                    return;
-                }
-            }
-
             if (multiple_of_ && value != 0) // exclude zero
             {
                 if (!is_multiple_of(value, *multiple_of_))
@@ -662,12 +666,70 @@ namespace jsonschema {
                 }
             }
         }
-
+    private:
         static bool is_multiple_of(T x, double multiple_of) 
         {
             double rem = std::remainder(x, multiple_of);
             double eps = std::nextafter(x, 0) - x;
             return std::fabs(rem) < std::fabs(eps);
+        }
+    };
+
+    template <class Json>
+    class integer_keyword : public numericic_type_keywords<Json,int64_t>
+    {
+    public:
+        integer_keyword(const Json& sch, 
+                          const std::vector<uri_wrapper>& uris, 
+                          std::set<std::string>& keywords)
+            : numericic_type_keywords<Json, int64_t>(sch, uris, keywords)
+        {
+        }
+    private:
+        void do_validate(const uri_wrapper& instance_location, 
+                         const Json& instance, 
+                         error_reporter& reporter, 
+                         Json&) const 
+        {
+            if (!(instance.template is_integer<int64_t>() || (instance.is_double() && static_cast<double>(instance.template as<int64_t>()) == instance.template as<double>())))
+            {
+                reporter.error(validation_output(instance_location.string(), "Instance is not an integer", "integer", this->absolute_keyword_location()));
+                if (reporter.fail_early())
+                {
+                    return;
+                }
+            }
+            int64_t value = instance.template as<int64_t>(); 
+            this->apply_kewords(value, instance_location, instance, reporter);
+        }
+    };
+
+    template <class Json>
+    class number_keyword : public numericic_type_keywords<Json,double>
+    {
+    public:
+        number_keyword(const Json& sch,
+                          const std::vector<uri_wrapper>& uris, 
+                          std::set<std::string>& keywords)
+            : numericic_type_keywords<Json, double>(sch, uris, keywords)
+        {
+        }
+    private:
+        void do_validate(const uri_wrapper& instance_location, 
+                         const Json& instance, 
+                         error_reporter& reporter, 
+                         Json&) const 
+        {
+            if (!(instance.template is_integer<int64_t>() || instance.is_double()))
+            {
+                reporter.error(validation_output(instance_location.string(), "Instance is not a number", "number", this->absolute_keyword_location()));
+                if (reporter.fail_early())
+                {
+                    return;
+                }
+            }
+            double value = instance.template as<double>(); 
+            this->apply_kewords(value, instance_location, instance, reporter);
         }
     };
 
