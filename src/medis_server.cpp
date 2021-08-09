@@ -12,7 +12,7 @@
 
 #include "lib/leveldb/cache.h"
 #include "lib/lua/kaguya_ext.hpp"
-#include "lib/msgpack.hpp"
+#include "lib/jsoncons/json.hpp"
 #include "medis_server.hpp"
 #include "util.hpp"
 
@@ -551,16 +551,15 @@ namespace mongols
     template <typename T>
     void medis_server::deserialize(const std::string &str, T &m)
     {
-        msgpack::unpack(str.c_str(), str.size()).get().convert(m);
+        jsoncons::json j(str);
+        m = std::move(j.as<T>());
     }
 
     template <typename T>
     std::string medis_server::serialize(const T &m)
     {
-        std::stringstream ss;
-        msgpack::pack(ss, m);
-        ss.seekg(0);
-        return ss.str();
+        jsoncons::json j(m);
+        return j.as_string();
     }
 
     std::string medis_server::hget(const std::vector<std::string> &ret)

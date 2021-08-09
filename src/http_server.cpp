@@ -10,7 +10,7 @@
 #include "http_server.hpp"
 #include "lib/hash/hash_engine.hpp"
 #include "lib/leveldb/cache.h"
-#include "lib/msgpack.hpp"
+#include "lib/jsoncons/json.hpp"
 #include "lib/re2/re2.h"
 #include "lib/re2/stringpiece.h"
 #include "lib/z/zlib.h"
@@ -704,15 +704,14 @@ namespace mongols
 
     std::string http_server::serialize(const std::unordered_map<std::string, std::string> &m)
     {
-        std::stringstream ss;
-        msgpack::pack(ss, m);
-        ss.seekg(0);
-        return ss.str();
+        jsoncons::json j(m);
+        return j.as_string();
     }
 
     void http_server::deserialize(const std::string &str, std::unordered_map<std::string, std::string> &m)
     {
-        msgpack::unpack(str.c_str(), str.size()).get().convert(m);
+        jsoncons::json j(str);
+        m = std::move(j.as<std::unordered_map<std::string,std::string>>());
     }
 
     http_server::cache_t::cache_t()
