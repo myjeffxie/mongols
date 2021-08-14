@@ -158,12 +158,15 @@ namespace mongols
                 if (sigaction(item, &act, NULL) < 0)
                 {
                     perror("sigaction error");
-                    return;
+                    return false;
                 }
             }
+            return true;
         };
-        config_signal(multi_process::signals);
-        config_signal(multi_process::ignore_signals);
+        if (!config_signal(multi_process::signals) || !config_signal(multi_process::ignore_signals))
+        {
+            return;
+        }
 
         mongols::epoll epoll(this->max_event_size, -1);
         if (!epoll.is_ready())
