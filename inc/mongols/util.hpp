@@ -90,7 +90,7 @@ namespace mongols
     class multi_process
     {
     public:
-        static std::vector<int> signals;
+        static std::vector<int> signals,ignore_signals;
 
     public:
         multi_process();

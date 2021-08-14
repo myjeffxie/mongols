@@ -721,7 +721,8 @@ namespace mongols
         return sched_setaffinity(pid, sizeof(cpu_set_t), &set) == 0;
     }
 
-    std::vector<int> multi_process::signals = {SIGHUP, SIGTERM, SIGINT, SIGQUIT, SIGPIPE, SIGUSR1, SIGUSR2};
+    std::vector<int> multi_process::signals = {SIGHUP, SIGTERM, SIGINT, SIGQUIT, SIGUSR1, SIGUSR2};
+    std::vector<int> multi_process::ignore_signals = {SIGPIPE};
     int multi_process::sig = -1;
     std::vector<std::pair<pid_t, int>> multi_process::pids;
 
@@ -739,10 +740,13 @@ namespace mongols
 
     void multi_process::set_signal()
     {
-        std::vector<int> sigs = multi_process::signals;
-        for (size_t i = 0; i < sigs.size(); ++i)
+        for (auto& i : multi_process::signals)
         {
-            signal(sigs[i], multi_process::signal_cb);
+            signal(i, multi_process::signal_cb);
+        }
+        for (auto &i : multi_process::ignore_signals)
+        {
+            signal(i, multi_process::signal_cb);
         }
     }
 
@@ -793,7 +797,8 @@ namespace mongols
 
     void multi_process::run(const std::function<void(pthread_mutex_t *, size_t *)> &f, const std::function<bool(int)> &g, size_t process_size)
     {
-        std::function<void()> process_work = [&]() {
+        std::function<void()> process_work = [&]()
+        {
             prctl(PR_SET_NAME, std::to_string(getppid()).append(":worker").c_str());
             f(this->mtx, this->data);
         };
@@ -807,12 +812,12 @@ namespace mongols
             }
         }
 
-        std::function<void(pid_t)> refork = [&](pid_t pid) {
+        std::function<void(pid_t)> refork = [&](pid_t pid)
+        {
             if (mongols::forker(1, process_work, multi_process::pids) > 0)
             {
-                std::vector<std::pair<pid_t, int>>::iterator p = std::find_if(multi_process::pids.begin(), multi_process::pids.end(), [=](const std::pair<pid_t, int> &item) {
-                    return item.first == pid;
-                });
+                std::vector<std::pair<pid_t, int>>::iterator p = std::find_if(multi_process::pids.begin(), multi_process::pids.end(), [=](const std::pair<pid_t, int> &item)
+                                                                              { return item.first == pid; });
                 if (p != multi_process::pids.end())
                 {
                     multi_process::pids.back().second = p->second;

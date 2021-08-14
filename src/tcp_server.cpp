@@ -41,7 +41,10 @@ namespace mongols
 
     void tcp_server::signal_normal_cb(int sig, siginfo_t *, void *)
     {
-        tcp_server::done = false;
+        if (std::find(mongols::multi_process::ignore_signals.begin(), mongols::multi_process::ignore_signals.end(), sig) == mongols::multi_process::ignore_signals.end())
+        {
+            tcp_server::done = false;
+        }
     }
 
     tcp_server::tcp_server(const std::string &host, int port, int timeout, size_t buffer_size, int max_event_size)
@@ -142,21 +145,26 @@ namespace mongols
             perror("server error");
             return;
         }
-        std::vector<int> sigs = multi_process::signals;
 
         struct sigaction act;
-        for (size_t i = 0; i < sigs.size(); ++i)
+        auto config_signal = [&](const std::vector<int> &v)
         {
-            memset(&act, 0, sizeof(struct sigaction));
-            sigemptyset(&act.sa_mask);
-            act.sa_sigaction = tcp_server::signal_normal_cb;
-            act.sa_flags = SA_SIGINFO;
-            if (sigaction(sigs[i], &act, NULL) < 0)
+            for (const auto &item : v)
             {
-                perror("sigaction error");
-                return;
+                memset(&act, 0, sizeof(struct sigaction));
+                sigemptyset(&act.sa_mask);
+                act.sa_sigaction = tcp_server::signal_normal_cb;
+                act.sa_flags = SA_SIGINFO;
+                if (sigaction(item, &act, NULL) < 0)
+                {
+                    perror("sigaction error");
+                    return;
+                }
             }
-        }
+        };
+        config_signal(multi_process::signals);
+        config_signal(multi_process::ignore_signals);
+
         mongols::epoll epoll(this->max_event_size, -1);
         if (!epoll.is_ready())
         {
@@ -252,15 +260,16 @@ namespace mongols
             }
             else
             {
-                this->whitelist_inotify->set_cb([&, real_path, file_name](struct inotify_event *event) {
-                    if (event->len > 0)
-                    {
-                        if (strncmp(event->name, file_name.c_str(), event->len) == 0 && event->mask & this->whitelist_inotify->get_mask())
-                        {
-                            this->read_whitelist_file(real_path);
-                        }
-                    }
-                });
+                this->whitelist_inotify->set_cb([&, real_path, file_name](struct inotify_event *event)
+                                                {
+                                                    if (event->len > 0)
+                                                    {
+                                                        if (strncmp(event->name, file_name.c_str(), event->len) == 0 && event->mask & this->whitelist_inotify->get_mask())
+                                                        {
+                                                            this->read_whitelist_file(real_path);
+                                                        }
+                                                    }
+                                                });
             }
         }
     }
@@ -318,7 +327,8 @@ namespace mongols
                 ++i;
             }
         }
-        for( auto& i : litter_fd){
+        for (auto &i : litter_fd)
+        {
             this->del_client(i);
         }
         return false;
@@ -364,9 +374,8 @@ namespace mongols
 
     bool tcp_server::check_whitelist(const std::string &ip)
     {
-        return std::find_if(this->whitelist.begin(), this->whitelist.end(), [&](const std::string &v) {
-                   return re2::RE2::FullMatch(ip, v);
-               }) != this->whitelist.end();
+        return std::find_if(this->whitelist.begin(), this->whitelist.end(), [&](const std::string &v)
+                            { return re2::RE2::FullMatch(ip, v); }) != this->whitelist.end();
     }
 
     bool tcp_server::security_check(const tcp_server::client_t &client)
@@ -407,7 +416,8 @@ namespace mongols
             std::pair<char *, size_t> input;
             input.first = &buffer[0];
             input.second = ret;
-            filter_handler_function send_to_other_filter = [](const client_t &) {
+            filter_handler_function send_to_other_filter = [](const client_t &)
+            {
                 return true;
             };
 
@@ -487,7 +497,8 @@ namespace mongols
             std::pair<char *, size_t> input;
             input.first = &buffer[0];
             input.second = ret;
-            filter_handler_function send_to_other_filter = [](const client_t &) {
+            filter_handler_function send_to_other_filter = [](const client_t &)
+            {
                 return true;
             };
 
