@@ -551,7 +551,7 @@ namespace mongols
     template <typename T>
     void medis_server::deserialize(const std::string &str, T &m)
     {
-        jsoncons::json j(str);
+        jsoncons::json j = jsoncons::json::parse(str);
         m = std::move(j.as<T>());
     }
 

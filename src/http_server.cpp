@@ -710,7 +710,7 @@ namespace mongols
 
     void http_server::deserialize(const std::string &str, std::unordered_map<std::string, std::string> &m)
     {
-        jsoncons::json j(str);
+        jsoncons::json j = jsoncons::json::parse(str);
         m = std::move(j.as<std::unordered_map<std::string,std::string>>());
     }
 
