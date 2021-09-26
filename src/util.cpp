@@ -448,7 +448,7 @@ namespace mongols
             {
                 v.push_back(std::move(tmp));
             }
-            last = index + 1;
+            last = index + delim.size();
             index = s.find_first_of(delim, last);
         }
         if (index - last > 0)
