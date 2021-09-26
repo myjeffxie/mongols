@@ -74,63 +74,68 @@ namespace mongols
 
     void web_server::res_filter(const mongols::request &req, mongols::response &res)
     {
-        std::string path = std::move(this->root_path[req.headers.at("Host")] + req.uri);
-        struct stat st;
-        if (stat(path.c_str(), &st) == 0)
+        std::string host = req.headers.at("Host");
+        auto iter = this->root_path.find(host);
+        if (iter != this->root_path.end())
         {
-            if (S_ISREG(st.st_mode))
+            std::string path = std::move(this->root_path[host] + req.uri);
+            struct stat st;
+            if (stat(path.c_str(), &st) == 0)
             {
-                int ffd = open(path.c_str(), O_RDONLY | O_NONBLOCK);
-                if (ffd > 0)
+                if (S_ISREG(st.st_mode))
                 {
-                    if (posix_fadvise(ffd, 0, 0, POSIX_FADV_SEQUENTIAL) == 0)
+                    int ffd = open(path.c_str(), O_RDONLY | O_NONBLOCK);
+                    if (ffd > 0)
                     {
-                        char ffd_buffer[st.st_size];
-                    http_read:
-                        if (read(ffd, ffd_buffer, st.st_size) < 0)
+                        if (posix_fadvise(ffd, 0, 0, POSIX_FADV_SEQUENTIAL) == 0)
                         {
-                            if (errno == EAGAIN || errno == EINTR)
+                            char ffd_buffer[st.st_size];
+                        http_read:
+                            if (read(ffd, ffd_buffer, st.st_size) < 0)
                             {
-                                goto http_read;
-                            }
+                                if (errno == EAGAIN || errno == EINTR)
+                                {
+                                    goto http_read;
+                                }
 
-                            close(ffd);
-                            goto http_500;
+                                close(ffd);
+                                goto http_500;
+                            }
+                            else
+                            {
+                                res.status = 200;
+                                res.headers.find("Content-Type")->second = std::move(this->get_mime_type(path));
+                                time_t now = time(0);
+                                res.headers.insert(std::move(std::make_pair(std::move("Last-Modified"), mongols::http_time(&now))));
+                                res.content.assign(ffd_buffer, st.st_size);
+                                close(ffd);
+                            }
                         }
                         else
                         {
-                            res.status = 200;
-                            res.headers.find("Content-Type")->second = std::move(this->get_mime_type(path));
-                            time_t now = time(0);
-                            res.headers.insert(std::move(std::make_pair(std::move("Last-Modified"), mongols::http_time(&now))));
-                            res.content.assign(ffd_buffer, st.st_size);
                             close(ffd);
+                            goto http_500;
                         }
                     }
                     else
                     {
-                        close(ffd);
-                        goto http_500;
+                    http_500:
+                        res.status = 500;
+                        res.content = std::move("Internal Server Error");
                     }
                 }
-                else
+                else if (S_ISDIR(st.st_mode))
                 {
-                http_500:
-                    res.status = 500;
-                    res.content = std::move("Internal Server Error");
-                }
-            }
-            else if (S_ISDIR(st.st_mode))
-            {
-                if (this->list_directory)
-                {
-                    res.content = std::move(this->create_list_directory_response(req, path));
-                    res.status = 200;
-                }
-                else
-                {
-                    res.status = 403;
-                    res.content = std::move("Forbidden");
+                    if (this->list_directory)
+                    {
+                        res.content = std::move(this->create_list_directory_response(req, path));
+                        res.status = 200;
+                    }
+                    else
+                    {
+                        res.status = 403;
+                        res.content = std::move("Forbidden");
+                    }
                 }
             }
         }
@@ -219,80 +224,85 @@ namespace mongols
 
     void web_server::res_filter_with_mmap(const mongols::request &req, mongols::response &res)
     {
-        std::string path = std::move(this->root_path[req.headers.at("Host")] + req.uri), mmap_key = std::move(hash_engine::md5(path));
-        std::unordered_map<std::string, std::pair<char *, struct stat>>::const_iterator iter;
-        struct stat st;
-        if (stat(path.c_str(), &st) == 0)
+        std::string host = req.headers.at("Host");
+        auto iter = this->root_path.find(host);
+        if (iter != this->root_path.end())
         {
-            if (S_ISREG(st.st_mode))
+            std::string path = std::move(this->root_path[host] + req.uri), mmap_key = std::move(hash_engine::md5(path));
+            std::unordered_map<std::string, std::pair<char *, struct stat>>::const_iterator iter;
+            struct stat st;
+            if (stat(path.c_str(), &st) == 0)
             {
-                if ((iter = this->file_mmap.find(mmap_key)) != this->file_mmap.end())
+                if (S_ISREG(st.st_mode))
                 {
-                    if (iter->second.second.st_mtime != st.st_mtime)
+                    if ((iter = this->file_mmap.find(mmap_key)) != this->file_mmap.end())
                     {
-                        munmap(iter->second.first, iter->second.second.st_size);
-                        this->file_mmap.erase(iter);
-                        goto http_read;
-                    }
-                    res.status = 200;
-                    res.headers.find("Content-Type")->second = std::move(this->get_mime_type(path));
-                    res.content.assign(iter->second.first, iter->second.second.st_size);
-                }
-                else
-                {
-                http_read:
-                    int ffd = open(path.c_str(), O_RDONLY | O_NONBLOCK);
-                    if (ffd > 0)
-                    {
-                        char *mmap_ptr = (char *)mmap(0, st.st_size, PROT_READ, MAP_PRIVATE | MAP_POPULATE, ffd, 0);
-                        if (mmap_ptr == MAP_FAILED)
+                        if (iter->second.second.st_mtime != st.st_mtime)
                         {
-                            close(ffd);
-                            goto http_500;
+                            munmap(iter->second.first, iter->second.second.st_size);
+                            this->file_mmap.erase(iter);
+                            goto http_read;
                         }
-                        else
-                        {
-                            close(ffd);
-                            if (madvise(mmap_ptr, st.st_size, MADV_SEQUENTIAL) == 0)
-                            {
-                                res.status = 200;
-                                res.headers.find("Content-Type")->second = std::move(this->get_mime_type(path));
-                                res.content.assign(mmap_ptr, st.st_size);
-                                this->file_mmap[mmap_key] = std::move(std::make_pair(mmap_ptr, st));
-                            }
-                            else
-                            {
-                                munmap(mmap_ptr, st.st_size);
-                                goto http_500;
-                            }
-                        }
+                        res.status = 200;
+                        res.headers.find("Content-Type")->second = std::move(this->get_mime_type(path));
+                        res.content.assign(iter->second.first, iter->second.second.st_size);
                     }
                     else
                     {
-                    http_500:
-                        res.status = 500;
-                        res.content = std::move("Internal Server Error");
+                    http_read:
+                        int ffd = open(path.c_str(), O_RDONLY | O_NONBLOCK);
+                        if (ffd > 0)
+                        {
+                            char *mmap_ptr = (char *)mmap(0, st.st_size, PROT_READ, MAP_PRIVATE | MAP_POPULATE, ffd, 0);
+                            if (mmap_ptr == MAP_FAILED)
+                            {
+                                close(ffd);
+                                goto http_500;
+                            }
+                            else
+                            {
+                                close(ffd);
+                                if (madvise(mmap_ptr, st.st_size, MADV_SEQUENTIAL) == 0)
+                                {
+                                    res.status = 200;
+                                    res.headers.find("Content-Type")->second = std::move(this->get_mime_type(path));
+                                    res.content.assign(mmap_ptr, st.st_size);
+                                    this->file_mmap[mmap_key] = std::move(std::make_pair(mmap_ptr, st));
+                                }
+                                else
+                                {
+                                    munmap(mmap_ptr, st.st_size);
+                                    goto http_500;
+                                }
+                            }
+                        }
+                        else
+                        {
+                        http_500:
+                            res.status = 500;
+                            res.content = std::move("Internal Server Error");
+                        }
+                    }
+                }
+                else if (S_ISDIR(st.st_mode))
+                {
+                    if (this->list_directory)
+                    {
+                        res.content = std::move(this->create_list_directory_response(req, path));
+                        res.status = 200;
+                    }
+                    else
+                    {
+                        res.status = 403;
+                        res.content = std::move("Forbidden");
                     }
                 }
             }
-            else if (S_ISDIR(st.st_mode))
+            else if ((iter = this->file_mmap.find(mmap_key)) != this->file_mmap.end())
             {
-                if (this->list_directory)
-                {
-                    res.content = std::move(this->create_list_directory_response(req, path));
-                    res.status = 200;
-                }
-                else
-                {
-                    res.status = 403;
-                    res.content = std::move("Forbidden");
-                }
+                munmap(iter->second.first, iter->second.second.st_size);
+                this->file_mmap.erase(iter);
             }
-        }
-        else if ((iter = this->file_mmap.find(mmap_key)) != this->file_mmap.end())
-        {
-            munmap(iter->second.first, iter->second.second.st_size);
-            this->file_mmap.erase(iter);
         }
     }
 
