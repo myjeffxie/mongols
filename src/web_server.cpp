@@ -74,7 +74,7 @@ namespace mongols
 
     void web_server::res_filter(const mongols::request &req, mongols::response &res)
     {
-        std::string path = std::move(this->root_path + req.uri);
+        std::string path = std::move(this->root_path[req.headers.at("Host")] + req.uri);
         struct stat st;
         if (stat(path.c_str(), &st) == 0)
         {
@@ -124,7 +124,7 @@ namespace mongols
             {
                 if (this->list_directory)
                 {
-                    res.content = std::move(this->create_list_directory_response(path));
+                    res.content = std::move(this->create_list_directory_response(req, path));
                     res.status = 200;
                 }
                 else
@@ -146,9 +146,9 @@ namespace mongols
         return this->mime_type[path.substr(p + 1)];
     }
 
-    void web_server::set_root_path(const std::string &path)
+    void web_server::set_root_path(const std::string &host, const std::string &path)
     {
-        this->root_path = path;
+        this->root_path[host] = path;
     }
 
     void web_server::set_mime_type_file(const std::string &path)
@@ -177,14 +177,14 @@ namespace mongols
         }
     }
 
-    std::string web_server::create_list_directory_response(const std::string &path)
+    std::string web_server::create_list_directory_response(const mongols::request &req, const std::string &path)
     {
         kainjow::mustache::mustache render_engine(web_server::dir_index_template);
         kainjow::mustache::data list{kainjow::mustache::data::type::list};
 
         DIR *dir = opendir(path.c_str());
         std::string tmp_path;
-        size_t n = this->root_path.size();
+        size_t n = this->root_path[req.headers.at("Host")].size();
         struct dirent *entry;
         bool b = path.back() != '/';
         while ((entry = readdir(dir)) != NULL)
@@ -219,7 +219,7 @@ namespace mongols
 
     void web_server::res_filter_with_mmap(const mongols::request &req, mongols::response &res)
     {
-        std::string path = std::move(this->root_path + req.uri), mmap_key = std::move(hash_engine::md5(path));
+        std::string path = std::move(this->root_path[req.headers.at("Host")] + req.uri), mmap_key = std::move(hash_engine::md5(path));
         std::unordered_map<std::string, std::pair<char *, struct stat>>::const_iterator iter;
         struct stat st;
         if (stat(path.c_str(), &st) == 0)
@@ -279,7 +279,7 @@ namespace mongols
             {
                 if (this->list_directory)
                 {
-                    res.content = std::move(this->create_list_directory_response(path));
+                    res.content = std::move(this->create_list_directory_response(req, path));
                     res.status = 200;
                 }
                 else

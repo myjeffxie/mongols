@@ -85,9 +85,11 @@ namespace mongols
 
     void http_server::run_with_route(const std::function<bool(const mongols::request &)> &req_filter)
     {
-        auto res_filter = [&](const mongols::request &req, mongols::response &res) {
+        auto res_filter = [&](const mongols::request &req, mongols::response &res)
+        {
             std::vector<std::string> param;
-            auto f = [&](const std::string &m) {
+            auto f = [&](const std::string &m)
+            {
                 return m == req.method;
             };
             for (auto &i : this->route_map)
@@ -271,9 +273,8 @@ namespace mongols
 
     std::string http_server::tolower(std::string &str)
     {
-        std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) {
-            return std::tolower(c);
-        });
+        std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c)
+                       { return std::tolower(c); });
         return str;
     }
 
@@ -346,6 +347,13 @@ namespace mongols
             }
             if (req_filter(req))
             {
+                if (req.headers.find("Host") == req.headers.end())
+                {
+                    res.content = std::move(this->get_status_text(403));
+                    res.status = 403;
+                    keepalive = CLOSE_CONNECTION;
+                    return this->create_response(res, keepalive);
+                }
                 for (auto &rewrite_pattern : this->uri_rewrite_config)
                 {
                     if (RE2::Replace(&req.uri, rewrite_pattern.first, rewrite_pattern.second))
@@ -496,9 +504,8 @@ namespace mongols
                     if ((len > http_server::zip_min_size && len <= http_server::zip_max_size))
                     {
                         const std::string &res_content_type = res.headers.find("Content-Type")->second;
-                        auto zip_mime_type_iter = std::find_if(http_server::zip_mime_type.begin(), http_server::zip_mime_type.end(), [&](const std::string &item) {
-                            return res_content_type.find(item) != std::string::npos;
-                        });
+                        auto zip_mime_type_iter = std::find_if(http_server::zip_mime_type.begin(), http_server::zip_mime_type.end(), [&](const std::string &item)
+                                                               { return res_content_type.find(item) != std::string::npos; });
                         if (zip_mime_type_iter == http_server::zip_mime_type.end())
                         {
                             goto zip_error;
@@ -711,7 +718,7 @@ namespace mongols
     void http_server::deserialize(const std::string &str, std::unordered_map<std::string, std::string> &m)
     {
         jsoncons::json j = jsoncons::json::parse(str);
-        m = std::move(j.as<std::unordered_map<std::string,std::string>>());
+        m = std::move(j.as<std::unordered_map<std::string, std::string>>());
     }
 
     http_server::cache_t::cache_t()
