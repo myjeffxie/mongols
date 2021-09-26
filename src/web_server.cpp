@@ -43,7 +43,7 @@ namespace mongols
                                                            "</html>");
 
     web_server::web_server(const std::string &host, int port, int timeout, size_t buffer_size, size_t thread_size, size_t max_body_size, int max_event_size)
-        : root_path(), mime_type(), file_mmap(), server(0), list_directory(false), enable_mmap(false)
+        : last_cb(nullptr), root_path(), mime_type(), file_mmap(), server(0), list_directory(false), enable_mmap(false)
     {
         this->server = new http_server(host, port, timeout, buffer_size, thread_size, max_body_size, max_event_size);
     }
@@ -70,6 +70,11 @@ namespace mongols
         {
             this->server->run(req_filter, std::bind(&web_server::res_filter, this, std::placeholders::_1, std::placeholders::_2));
         }
+    }
+
+    void web_server::set_last_cb(const last_cb_t &f)
+    {
+        this->last_cb = f;
     }
 
     void web_server::res_filter(const mongols::request &req, mongols::response &res)
@@ -137,6 +142,10 @@ namespace mongols
                         res.content = std::move("Forbidden");
                     }
                 }
+            }
+            else if (this->last_cb)
+            {
+                this->last_cb(req, res);
             }
         }
     }
@@ -302,6 +311,10 @@ namespace mongols
             {
                 munmap(iter->second.first, iter->second.second.st_size);
                 this->file_mmap.erase(iter);
+            }
+            if (this->last_cb)
+            {
+                this->last_cb(req, res);
             }
         }
     }

@@ -11,6 +11,7 @@ namespace mongols
     class web_server
     {
     public:
+        typedef std::function<void(const mongols::request &req, mongols::response &)> last_cb_t;
         web_server() = delete;
         web_server(const std::string &host, int port, int timeout = 5000, size_t buffer_size = 8192, size_t thread_size = std::thread::hardware_concurrency(), size_t max_body_size = 4096, int max_event_size = 64);
         virtual ~web_server();
@@ -31,9 +32,11 @@ namespace mongols
         void set_enable_security_check(bool);
         void set_shutdown(const tcp_server::shutdown_function &);
         void run(const std::function<bool(const mongols::request &)> &req_filter);
+        void set_last_cb(const last_cb_t&);
 
     private:
         static std::string dir_index_template;
+        last_cb_t last_cb;
         std::unordered_map<std::string, std::string> root_path;
         std::unordered_map<std::string, std::string> mime_type;
         std::unordered_map<std::string, std::pair<char *, struct stat>> file_mmap;
