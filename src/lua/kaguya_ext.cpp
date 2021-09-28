@@ -1,13 +1,12 @@
 #include "lib/lua/kaguya_ext.hpp"
 #include "ext/json.hpp"
 #include "lib/hash/hash_engine.hpp"
-#include "lib/re2/re2.h"
-#include "posix_regex.hpp"
 #include "tcp_proxy_server.hpp"
 #include "util.hpp"
 #include "version.hpp"
 #include <string>
 #include <vector>
+#include <regex>
 
 namespace mongols
 {
@@ -53,35 +52,30 @@ namespace mongols
     {
         vm["mongols_regex"] = kaguya::NewTable();
         kaguya::LuaTable regex_tbl = vm["mongols_regex"];
-        regex_tbl["full_match"] = kaguya::function([](const std::string &pattern, const std::string &str) {
-            return RE2::FullMatch(str, pattern);
-        });
-        regex_tbl["partial_match"] = kaguya::function([](const std::string &pattern, const std::string &str) {
-            return RE2::PartialMatch(str, pattern);
-        });
-        regex_tbl["match"] = kaguya::function([](const std::string &pattern, const std::string &str) {
-            mongols::posix_regex regex(pattern);
-            std::vector<std::string> v;
-            if (regex.match(str, v))
-            {
-                return v;
-            }
-            return v;
-        });
-        regex_tbl["match_find"] = kaguya::function([](const std::string &pattern, const std::string &str) {
-            std::vector<std::string> v;
-            bool b = regex_find(pattern, str, v);
-            return std::tuple<bool, std::vector<std::string>>(b, v);
-        });
+        regex_tbl["match"] = kaguya::function([](const std::string &pattern, const std::string &str)
+                                              { return regex_match(str, std::regex(pattern)); });
+        regex_tbl["match_find"] = kaguya::function([](const std::string &pattern, const std::string &str)
+                                                   {
+                                                       std::regex re(pattern);
+                                                       std::vector<std::string> v;
+                                                       std::smatch sm;
+                                                       if (std::regex_match(str, sm, re))
+                                                       {
+                                                           for (auto &i : sm)
+                                                           {
+                                                               v.push_back(i);
+                                                           }
+                                                           return v;
+                                                       }
+                                                       return v;
+                                                   });
 
         vm["mongols_hash"] = kaguya::NewTable();
         kaguya::LuaTable hash_tbl = vm["mongols_hash"];
-        hash_tbl["md5"] = kaguya::function([](const std::string &str) {
-            return mongols::hash_engine::md5(str);
-        });
-        hash_tbl["sha1"] = kaguya::function([](const std::string &str) {
-            return mongols::hash_engine::sha1(str);
-        });
+        hash_tbl["md5"] = kaguya::function([](const std::string &str)
+                                           { return mongols::hash_engine::md5(str); });
+        hash_tbl["sha1"] = kaguya::function([](const std::string &str)
+                                            { return mongols::hash_engine::sha1(str); });
 
         vm["mongols_json"].setClass(
             kaguya::UserdataMetatable<json>()

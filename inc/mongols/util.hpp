@@ -1,6 +1,5 @@
 #pragma once
 
-#include "lib/re2/re2.h"
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
@@ -12,6 +11,7 @@
 #include <unistd.h>
 #include <unordered_map>
 #include <vector>
+#include <regex>
 
 namespace mongols
 {
@@ -82,15 +82,10 @@ namespace mongols
 
     bool process_bind_cpu(pid_t pid, int cpu);
 
-    bool regex_match(const RE2 &re2, const std::string &str, std::vector<std::string> &results);
-    bool regex_match(const std::string &pattern, const std::string &str, std::vector<std::string> &results);
-    bool regex_find(const RE2 &re2, const std::string &str, std::vector<std::string> &results);
-    bool regex_find(const std::string &pattern, const std::string &str, std::vector<std::string> &results);
-
     class multi_process
     {
     public:
-        static std::vector<int> signals,ignore_signals;
+        static std::vector<int> signals, ignore_signals;
 
     public:
         multi_process();

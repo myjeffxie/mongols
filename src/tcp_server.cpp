@@ -20,9 +20,9 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <regex>
 
 #include "openssl.hpp"
-#include "re2/re2.h"
 #include "tcp_server.hpp"
 #include "util.hpp"
 
@@ -206,16 +206,6 @@ namespace mongols
         this->cleaning_fun = f;
     }
 
-    void tcp_server::set_whitelist(const std::string &ip)
-    {
-        this->whitelist.push_back(ip);
-    }
-
-    void tcp_server::del_whitelist(const std::string &ip)
-    {
-        this->whitelist.remove(ip);
-    }
-
     bool tcp_server::read_whitelist_file(const std::string &path)
     {
         if (mongols::is_file(path))
@@ -230,7 +220,7 @@ namespace mongols
                     mongols::trim(std::ref(line));
                     if (!line.empty() && line.front() != '#')
                     {
-                        this->whitelist.push_back(line);
+                        this->whitelist.push_back(std::regex(line));
                     }
                 }
                 return true;
@@ -377,8 +367,8 @@ namespace mongols
 
     bool tcp_server::check_whitelist(const std::string &ip)
     {
-        return std::find_if(this->whitelist.begin(), this->whitelist.end(), [&](const std::string &v)
-                            { return re2::RE2::FullMatch(ip, v); }) != this->whitelist.end();
+        return std::find_if(this->whitelist.begin(), this->whitelist.end(), [&](const std::regex &v)
+                            { return std::regex_match(ip, v); }) != this->whitelist.end();
     }
 
     bool tcp_server::security_check(const tcp_server::client_t &client)

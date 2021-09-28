@@ -2,9 +2,9 @@ mongols_res:header('Content-Type','text/plain;charset=UTF-8')
 
 if mongols_req:has_form('test') then
     local test=mongols_req:get_form('test')
-    if mongols_regex.partial_match('^[0-9]+$',test) then
+    if mongols_regex.match('^[0-9]+$',test) then
         mongols_res:content('int type: '..test)
-    elseif mongols_regex.partial_match('^[a-zA-Z]+$',test) then
+    elseif mongols_regex.match('^[a-zA-Z]+$',test) then
         mongols_res:content('string type: '..test)
     else
         local match=mongols_regex.match('(\\w+)[_:+-](\\w+)',test)

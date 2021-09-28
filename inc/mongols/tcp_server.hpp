@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <unordered_map>
 #include <utility>
+#include <regex>
 
 #include "epoll.hpp"
 #include "inotify.hpp"
@@ -75,11 +76,8 @@ namespace mongols
         void set_enable_blacklist(bool);
         void set_enable_security_check(bool);
         void set_enable_whitelist(bool);
-        void set_shutdown(const shutdown_function &);
-
-        virtual void set_whitelist(const std::string &);
-        virtual void del_whitelist(const std::string &);
         void set_whitelist_file(const std::string &);
+        void set_shutdown(const shutdown_function &);
 
         static int backlog;
         static size_t backlist_size;
@@ -132,7 +130,7 @@ namespace mongols
         mongols::thread_pool<std::function<bool()>> *work_pool;
 
         lru11::Cache<std::string, std::shared_ptr<black_ip_t>> blacklist;
-        std::list<std::string> whitelist;
+        std::list<std::regex> whitelist;
 
         std::shared_ptr<mongols::openssl> openssl_manager;
         std::string openssl_crt_file, openssl_key_file;

@@ -16,6 +16,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <regex>
 
 #include "tcp_threading_server.hpp"
 #include "util.hpp"
@@ -27,18 +28,6 @@ namespace mongols
         : tcp_server(host, port, timeout, buffer_size, max_event_size), main_mtx()
     {
         this->thread_size = (thread_size == 0 ? std::thread::hardware_concurrency() : thread_size);
-    }
-
-    void tcp_threading_server::set_whitelist(const std::string &ip)
-    {
-        std::lock_guard<std::mutex> lk(this->main_mtx);
-        this->whitelist.push_back(ip);
-    }
-
-    void tcp_threading_server::del_whitelist(const std::string &ip)
-    {
-        std::lock_guard<std::mutex> lk(this->main_mtx);
-        this->whitelist.remove(ip);
     }
 
     bool tcp_threading_server::read_whitelist_file(const std::string &path)
@@ -56,7 +45,7 @@ namespace mongols
                     mongols::trim(line);
                     if (!line.empty())
                     {
-                        this->whitelist.push_back(line);
+                        this->whitelist.push_back(std::regex(line));
                     }
                 }
                 return true;
@@ -162,7 +151,8 @@ namespace mongols
     bool tcp_threading_server::check_whitelist(const std::string &ip)
     {
         std::lock_guard<std::mutex> lk(this->main_mtx);
-        return std::find(this->whitelist.begin(), this->whitelist.end(), ip) != this->whitelist.end();
+        return std::find_if(this->whitelist.begin(), this->whitelist.end(), [&](const std::regex &v)
+                            { return std::regex_match(ip, v); }) != this->whitelist.end();
     }
 
     bool tcp_threading_server::work(int fd, const handler_function &g)
@@ -193,7 +183,8 @@ namespace mongols
             input.first = &buffer[0];
             input.second = ret;
             std::string output;
-            filter_handler_function send_to_other_filter = [](const tcp_server::client_t &) {
+            filter_handler_function send_to_other_filter = [](const tcp_server::client_t &)
+            {
                 return true;
             };
             bool keepalive = CLOSE_CONNECTION, send_to_all = false;
@@ -277,7 +268,8 @@ namespace mongols
             input.first = &buffer[0];
             input.second = ret;
             std::string output;
-            filter_handler_function send_to_other_filter = [](const tcp_server::client_t &) {
+            filter_handler_function send_to_other_filter = [](const tcp_server::client_t &)
+            {
                 return true;
             };
             bool keepalive = CLOSE_CONNECTION, send_to_all = false;

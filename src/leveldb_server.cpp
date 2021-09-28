@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <functional>
+#include <regex>
 #include <unistd.h>
 
 #include "util.hpp"
@@ -160,7 +161,7 @@ namespace mongols
         this->server->set_lru_cache_size(len);
     }
 
-    void leveldb_server::set_uri_rewrite(const std::pair<std::string, std::string> &p)
+    void leveldb_server::set_uri_rewrite(const std::pair<std::regex, std::string> &p)
     {
         this->server->set_uri_rewrite(p);
     }
@@ -179,15 +180,6 @@ namespace mongols
     {
         this->server->set_enable_whitelist(b);
     }
-    void leveldb_server::set_whitelist(const std::string &ip)
-    {
-        this->server->set_whitelist(ip);
-    }
-    void leveldb_server::del_whitelist(const std::string &ip)
-    {
-        this->server->del_whitelist(ip);
-    }
-
     void leveldb_server::set_whitelist_file(const std::string &path)
     {
         this->server->set_whitelist_file(path);

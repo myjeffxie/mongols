@@ -8,6 +8,10 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <regex>
+
+
+
 
 #include "lib/hash/hash_engine.hpp"
 #include "lib/mustache.hpp"
@@ -329,7 +333,7 @@ namespace mongols
         this->server->set_lru_cache_size(len);
     }
 
-    void web_server::set_uri_rewrite(const std::pair<std::string, std::string> &p)
+    void web_server::set_uri_rewrite(const std::pair<std::regex, std::string> &p)
     {
         this->server->set_uri_rewrite(p);
     }
@@ -347,14 +351,6 @@ namespace mongols
     void web_server::set_enable_whitelist(bool b)
     {
         this->server->set_enable_whitelist(b);
-    }
-    void web_server::set_whitelist(const std::string &ip)
-    {
-        this->server->set_whitelist(ip);
-    }
-    void web_server::del_whitelist(const std::string &ip)
-    {
-        this->server->del_whitelist(ip);
     }
     void web_server::set_whitelist_file(const std::string &path)
     {

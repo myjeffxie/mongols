@@ -3,6 +3,7 @@
 #include "server_bind_script.hpp"
 #include "util.hpp"
 #include <functional>
+#include <regex>
 
 namespace mongols
 {
@@ -144,7 +145,7 @@ namespace mongols
         this->server->set_write_buffer_size(len);
     }
 
-    void lua_server::set_uri_rewrite(const std::pair<std::string, std::string> &p)
+    void lua_server::set_uri_rewrite(const std::pair<std::regex, std::string> &p)
     {
         this->server->set_uri_rewrite(p);
     }
@@ -163,15 +164,6 @@ namespace mongols
     {
         this->server->set_enable_whitelist(b);
     }
-    void lua_server::set_whitelist(const std::string &ip)
-    {
-        this->server->set_whitelist(ip);
-    }
-    void lua_server::del_whitelist(const std::string &ip)
-    {
-        this->server->del_whitelist(ip);
-    }
-
     void lua_server::set_whitelist_file(const std::string &path)
     {
         this->server->set_whitelist_file(path);

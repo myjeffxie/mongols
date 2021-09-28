@@ -6,13 +6,11 @@
 #include <sys/stat.h>
 #include <utility>
 
-#include "MPFDParser/Parser.h"
 #include "http_server.hpp"
+#include "MPFDParser/Parser.h"
 #include "lib/hash/hash_engine.hpp"
 #include "lib/leveldb/cache.h"
 #include "lib/jsoncons/json.hpp"
-#include "lib/re2/re2.h"
-#include "lib/re2/stringpiece.h"
 #include "lib/z/zlib.h"
 #include "tcp_threading_server.hpp"
 #include "util.hpp"
@@ -94,8 +92,13 @@ namespace mongols
             };
             for (auto &i : this->route_map)
             {
-                if (std::find_if(i.method.begin(), i.method.end(), f) != i.method.end() && mongols::regex_find(*i.re2_engine, req.uri, param))
+                std::smatch sm;
+                if (std::find_if(i.method.begin(), i.method.end(), f) != i.method.end() && std::regex_match(req.uri, sm, *i.regex_engine))
                 {
+                    for (auto &item : sm)
+                    {
+                        param.push_back(item);
+                    }
                     i.handler(req, res, param);
                     break;
                 }
@@ -356,8 +359,9 @@ namespace mongols
                 }
                 for (auto &rewrite_pattern : this->uri_rewrite_config)
                 {
-                    if (RE2::Replace(&req.uri, rewrite_pattern.first, rewrite_pattern.second))
+                    if (std::regex_match(req.uri, rewrite_pattern.first))
                     {
+                        req.uri = regex_replace(req.uri, rewrite_pattern.first, rewrite_pattern.second);
                         break;
                     }
                 }
@@ -650,7 +654,7 @@ namespace mongols
         this->db_path = path;
     }
 
-    void http_server::set_uri_rewrite(const std::pair<std::string, std::string> &p)
+    void http_server::set_uri_rewrite(const std::pair<std::regex, std::string> &p)
     {
         this->uri_rewrite_config.push_back(p);
     }
@@ -689,14 +693,6 @@ namespace mongols
     void http_server::set_enable_whitelist(bool b)
     {
         this->server->set_enable_whitelist(b);
-    }
-    void http_server::set_whitelist(const std::string &ip)
-    {
-        this->server->set_whitelist(ip);
-    }
-    void http_server::del_whitelist(const std::string &ip)
-    {
-        this->server->del_whitelist(ip);
     }
 
     void http_server::set_whitelist_file(const std::string &path)
@@ -737,9 +733,7 @@ namespace mongols
         r.method = method;
         r.pattern = pattern;
         r.handler = hander;
-        r.re2_options = std::move(std::make_shared<RE2::Options>());
-        r.re2_options->set_log_errors(false);
-        r.re2_engine = std::move(std::make_shared<RE2>("(" + pattern + ")", *r.re2_options));
+        r.regex_engine = std::move(std::make_shared<std::regex>(pattern));
         this->route_map.emplace_back(std::move(r));
     }
 } // namespace mongols

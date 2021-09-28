@@ -270,15 +270,6 @@ namespace mongols
     {
         this->server->set_enable_whitelist(b);
     }
-    void medis_server::set_whitelist(const std::string &ip)
-    {
-        this->server->set_whitelist(ip);
-    }
-    void medis_server::del_whitelist(const std::string &ip)
-    {
-        this->server->del_whitelist(ip);
-    }
-
     void medis_server::set_whitelist_file(const std::string &path)
     {
         this->server->set_whitelist_file(path);

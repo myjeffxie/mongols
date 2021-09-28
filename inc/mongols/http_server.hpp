@@ -4,7 +4,6 @@
 #include "lib/LRUCache11.hpp"
 #include "lib/leveldb/db.h"
 #include "lib/leveldb/options.h"
-#include "lib/re2/re2.h"
 #include "request.hpp"
 #include "response.hpp"
 #include "tcp_server.hpp"
@@ -13,6 +12,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <regex>
 
 namespace mongols
 {
@@ -43,13 +43,11 @@ namespace mongols
         void set_enable_lru_cache(bool);
         void set_lru_cache_expires(long long);
         void set_lru_cache_size(size_t);
-        void set_uri_rewrite(const std::pair<std::string, std::string> &);
+        void set_uri_rewrite(const std::pair<std::regex, std::string> &);
         bool set_openssl(const std::string &, const std::string &, openssl::version_t = openssl::version_t::TLSv12, const std::string &ciphers = openssl::ciphers, long flags = openssl::flags);
         void set_enable_blacklist(bool);
         void set_enable_security_check(bool);
         void set_enable_whitelist(bool);
-        void set_whitelist(const std::string &);
-        void del_whitelist(const std::string &);
         void set_whitelist_file(const std::string &);
         void set_shutdown(const tcp_server::shutdown_function &);
 
@@ -96,7 +94,7 @@ namespace mongols
         long long session_expires, cache_expires, lru_cache_expires;
         bool enable_session, enable_cache, enable_lru_cache, openssl_is_ok;
         std::string db_path;
-        std::vector<std::pair<std::string, std::string>> uri_rewrite_config;
+        std::vector<std::pair<std::regex, std::string>> uri_rewrite_config;
         lru11::Cache<std::string, std::shared_ptr<cache_t>> *lru_cache;
 
         struct route_t
@@ -104,8 +102,7 @@ namespace mongols
             std::string pattern;
             std::list<std::string> method;
             std::function<void(const mongols::request &req, mongols::response &, const std::vector<std::string> &)> handler;
-            std::shared_ptr<RE2::Options> re2_options;
-            std::shared_ptr<RE2> re2_engine;
+            std::shared_ptr<std::regex> regex_engine;
         };
         std::list<route_t> route_map;
 

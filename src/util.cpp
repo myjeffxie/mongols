@@ -21,8 +21,6 @@
 
 #include "lib/cppcodec/base64_rfc4648.hpp"
 #include "lib/hash/hash_engine.hpp"
-#include "lib/re2/re2.h"
-#include "lib/re2/stringpiece.h"
 #include "util.hpp"
 
 namespace mongols
@@ -572,124 +570,6 @@ namespace mongols
         return ret;
     }
 
-    bool regex_match(const RE2 &re2, const std::string &str, std::vector<std::string> &results)
-    {
-        if (!re2.ok())
-        {
-            return false;
-        }
-        std::vector<RE2::Arg> arguments;
-        std::vector<RE2::Arg *> arguments_ptrs;
-
-        std::size_t args_count = re2.NumberOfCapturingGroups();
-
-        arguments.resize(args_count);
-        arguments_ptrs.resize(args_count);
-        results.resize(args_count);
-
-        for (std::size_t i = 0; i < args_count; ++i)
-        {
-
-            arguments[i] = &results[i];
-
-            arguments_ptrs[i] = &arguments[i];
-        }
-
-        return RE2::FullMatchN(re2::StringPiece(str), re2, arguments_ptrs.data(), args_count);
-    }
-
-    bool regex_match(const std::string &pattern, const std::string &str, std::vector<std::string> &results)
-    {
-        std::string wrapped_pattern = std::move("(" + pattern + ")");
-        RE2::Options opt;
-        opt.set_log_errors(false);
-        RE2 re2(wrapped_pattern, opt);
-        if (!re2.ok())
-        {
-            return false;
-        }
-
-        std::vector<RE2::Arg> arguments;
-        std::vector<RE2::Arg *> arguments_ptrs;
-
-        std::size_t args_count = re2.NumberOfCapturingGroups();
-
-        arguments.resize(args_count);
-        arguments_ptrs.resize(args_count);
-        results.resize(args_count);
-
-        for (std::size_t i = 0; i < args_count; ++i)
-        {
-
-            arguments[i] = &results[i];
-
-            arguments_ptrs[i] = &arguments[i];
-        }
-
-        return RE2::FullMatchN(re2::StringPiece(str), re2, arguments_ptrs.data(), args_count);
-    }
-
-    bool regex_find(const RE2 &re2, const std::string &str, std::vector<std::string> &results)
-    {
-        if (!re2.ok())
-        {
-            return false;
-        }
-        std::vector<RE2::Arg> arguments;
-
-        std::vector<RE2::Arg *> arguments_ptrs;
-
-        std::size_t args_count = re2.NumberOfCapturingGroups();
-
-        arguments.resize(args_count);
-        arguments_ptrs.resize(args_count);
-        results.resize(args_count);
-
-        for (std::size_t i = 0; i < args_count; ++i)
-        {
-
-            arguments[i] = &results[i];
-
-            arguments_ptrs[i] = &arguments[i];
-        }
-
-        re2::StringPiece piece(str);
-        return RE2::FindAndConsumeN(&piece, re2, arguments_ptrs.data(), args_count);
-    }
-
-    bool regex_find(const std::string &pattern, const std::string &str, std::vector<std::string> &results)
-    {
-        std::string wrapped_pattern = std::move("(" + pattern + ")");
-        RE2::Options opt;
-        opt.set_log_errors(false);
-        RE2 re2(wrapped_pattern, opt);
-        if (!re2.ok())
-        {
-            return false;
-        }
-
-        std::vector<RE2::Arg> arguments;
-
-        std::vector<RE2::Arg *> arguments_ptrs;
-
-        std::size_t args_count = re2.NumberOfCapturingGroups();
-
-        arguments.resize(args_count);
-        arguments_ptrs.resize(args_count);
-        results.resize(args_count);
-
-        for (std::size_t i = 0; i < args_count; ++i)
-        {
-
-            arguments[i] = &results[i];
-
-            arguments_ptrs[i] = &arguments[i];
-        }
-
-        re2::StringPiece piece(str);
-        return RE2::FindAndConsumeN(&piece, re2, arguments_ptrs.data(), args_count);
-    }
-
     pid_t forker(int len, const std::function<void()> &f, std::vector<std::pair<pid_t, int>> &pids)
     {
         pid_t pid = fork();
@@ -740,7 +620,7 @@ namespace mongols
 
     void multi_process::set_signal()
     {
-        for (auto& i : multi_process::signals)
+        for (auto &i : multi_process::signals)
         {
             signal(i, multi_process::signal_cb);
         }

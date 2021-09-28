@@ -21,8 +21,9 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <regex>
 
-#include "re2/re2.h"
+
 #include "udp_server.hpp"
 #include "util.hpp"
 
@@ -310,7 +311,7 @@ namespace mongols
     bool udp_server::check_whitelist(const std::string &ip)
     {
         return std::find_if(this->whitelist.begin(), this->whitelist.end(), [&](const std::string &v)
-                            { return re2::RE2::FullMatch(ip, v); }) != this->whitelist.end();
+                            { return regex_match(ip, std::regex(v)); }) != this->whitelist.end();
     }
 
     bool udp_server::security_check(const udp_server::client_t &client)
