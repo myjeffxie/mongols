@@ -368,4 +368,13 @@ namespace mongols
     {
         this->server->set_shutdown(f);
     }
+    void web_server::set_enable_dynamic(bool b)
+    {
+        this->server->set_enable_cache(b);
+        this->server->set_enable_session(b);
+    }
+    void web_server::set_db_path(const std::string &path)
+    {
+        this->server->set_db_path(path);
+    }
 } // namespace mongols

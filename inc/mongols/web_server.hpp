@@ -32,7 +32,9 @@ namespace mongols
         void set_enable_security_check(bool);
         void set_shutdown(const tcp_server::shutdown_function &);
         void run(const std::function<bool(const mongols::request &)> &req_filter);
-        void set_last_cb(const last_cb_t&);
+        void set_last_cb(const last_cb_t &);
+        void set_enable_dynamic(bool b);
+        void set_db_path(const std::string &);
 
     private:
         static std::string dir_index_template;
