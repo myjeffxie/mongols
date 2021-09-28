@@ -10,9 +10,6 @@
 #include <unistd.h>
 #include <regex>
 
-
-
-
 #include "lib/hash/hash_engine.hpp"
 #include "lib/mustache.hpp"
 #include "response.hpp"
@@ -368,6 +365,14 @@ namespace mongols
     {
         this->server->set_enable_cache(b);
         this->server->set_enable_session(b);
+    }
+    void web_server::set_session_expires(long long expires)
+    {
+        this->server->set_session_expires(expires);
+    }
+    void web_server::set_cache_expires(long long expires)
+    {
+        this->server->set_cache_expires(expires);
     }
     void web_server::set_db_path(const std::string &path)
     {

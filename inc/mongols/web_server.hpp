@@ -32,6 +32,8 @@ namespace mongols
         void run(const std::function<bool(const mongols::request &)> &req_filter);
         void set_last_cb(const last_cb_t &);
         void set_enable_dynamic(bool b);
+        void set_session_expires(long long);
+        void set_cache_expires(long long);
         void set_db_path(const std::string &);
 
     private:
