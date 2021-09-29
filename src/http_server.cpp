@@ -31,7 +31,7 @@ namespace mongols
     std::list<std::string> http_server::zip_mime_type = {"text/html", "text/css", "text/plain", "application/x-javascript", "text/xml"};
 
     http_server::http_server(const std::string &host, int port, int timeout, size_t buffer_size, size_t thread_size, size_t max_body_size, int max_event_size)
-        : server(0), max_body_size(max_body_size), lru_cache_size(1024), db(0), db_options(), session_expires(3600), cache_expires(3600), lru_cache_expires(300), enable_session(false), enable_cache(false), enable_lru_cache(false), openssl_is_ok(false), db_path(LEVELDB_PATH), uri_rewrite_config(), lru_cache(0), route_map()
+        : server(0), max_body_size(max_body_size), lru_cache_size(1024), db(0), db_options(), session_expires(3600), cache_expires(3600), lru_cache_expires(300), enable_session(false), enable_cache(false), enable_lru_cache(false), openssl_is_ok(false), db_path(LEVELDB_PATH), uri_rewrite_config(), lru_cache(0), route_map(), static_hosts()
     {
         if (thread_size > 0)
         {
@@ -350,13 +350,17 @@ namespace mongols
             }
             if (req_filter(req))
             {
-                if (req.headers.find("Host") == req.headers.end())
+                bool is_static_host = false;
+                if ((tmp_iterator = req.headers.find("Host")) == req.headers.end())
                 {
                     res.content = std::move(this->get_status_text(403));
                     res.status = 403;
                     keepalive = CLOSE_CONNECTION;
                     return this->create_response(res, keepalive);
                 }
+
+                is_static_host = !this->static_hosts.empty() && std::find(this->static_hosts.begin(), this->static_hosts.end(), tmp_iterator->second) != this->static_hosts.end();
+
                 for (auto &rewrite_pattern : this->uri_rewrite_config)
                 {
                     if (std::regex_match(req.uri, rewrite_pattern.first))
@@ -431,7 +435,7 @@ namespace mongols
 
                 std::string session_val, cache_v;
 
-                if (this->db)
+                if (!is_static_host && this->db)
                 {
                     if (this->enable_session)
                     {
@@ -550,7 +554,7 @@ namespace mongols
                 }
 
                 std::unordered_map<std::string, std::string> *ptr = 0;
-                if (!res.session.empty() && this->db)
+                if (!is_static_host && !res.session.empty() && this->db)
                 {
 
                     if (!req.session.empty())
@@ -568,7 +572,7 @@ namespace mongols
                     this->db->Put(leveldb::WriteOptions(), session_val, this->serialize(*ptr));
                 }
 
-                if (!res.cache.empty() && this->db)
+                if (!is_static_host && !res.cache.empty() && this->db)
                 {
                     if (!req.cache.empty())
                     {
@@ -736,4 +740,10 @@ namespace mongols
         r.regex_engine = std::move(std::make_shared<std::regex>(pattern));
         this->route_map.emplace_back(std::move(r));
     }
+
+    void http_server::set_static_host(const std::string &host)
+    {
+        this->static_hosts.push_back(host);
+    }
+
 } // namespace mongols

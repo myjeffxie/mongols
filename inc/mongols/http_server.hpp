@@ -50,6 +50,8 @@ namespace mongols
         void set_enable_whitelist(bool);
         void set_whitelist_file(const std::string &);
         void set_shutdown(const tcp_server::shutdown_function &);
+        void set_static_host(const std::string&);
+
 
     private:
         std::string work(
@@ -105,6 +107,7 @@ namespace mongols
             std::shared_ptr<std::regex> regex_engine;
         };
         std::list<route_t> route_map;
+        std::list<std::string> static_hosts;
 
     public:
         static int zip_level;
