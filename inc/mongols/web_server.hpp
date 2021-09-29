@@ -35,7 +35,7 @@ namespace mongols
         void set_session_expires(long long);
         void set_cache_expires(long long);
         void set_db_path(const std::string &);
-        void set_static_host(const std::string &);
+        void set_dynamic_uri_pattern(const std::regex &);
 
     private:
         static std::string dir_index_template;

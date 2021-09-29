@@ -31,7 +31,7 @@ namespace mongols
     std::list<std::string> http_server::zip_mime_type = {"text/html", "text/css", "text/plain", "application/x-javascript", "text/xml"};
 
     http_server::http_server(const std::string &host, int port, int timeout, size_t buffer_size, size_t thread_size, size_t max_body_size, int max_event_size)
-        : server(0), max_body_size(max_body_size), lru_cache_size(1024), db(0), db_options(), session_expires(3600), cache_expires(3600), lru_cache_expires(300), enable_session(false), enable_cache(false), enable_lru_cache(false), openssl_is_ok(false), db_path(LEVELDB_PATH), uri_rewrite_config(), lru_cache(0), route_map(), static_hosts()
+        : server(0), max_body_size(max_body_size), lru_cache_size(1024), db(0), db_options(), session_expires(3600), cache_expires(3600), lru_cache_expires(300), enable_session(false), enable_cache(false), enable_lru_cache(false), openssl_is_ok(false), db_path(LEVELDB_PATH), uri_rewrite_config(), lru_cache(0), route_map(), dynamic_uri_pattern(R"(.*\.(jsp|php|do|json|xml)$)")
     {
         if (thread_size > 0)
         {
@@ -350,7 +350,7 @@ namespace mongols
             }
             if (req_filter(req))
             {
-                bool is_static_host = false;
+                bool is_static_host = !std::regex_match(req.uri, this->dynamic_uri_pattern);
                 if ((tmp_iterator = req.headers.find("Host")) == req.headers.end())
                 {
                     res.content = std::move(this->get_status_text(403));
@@ -358,8 +358,6 @@ namespace mongols
                     keepalive = CLOSE_CONNECTION;
                     return this->create_response(res, keepalive);
                 }
-
-                is_static_host = !this->static_hosts.empty() && std::find(this->static_hosts.begin(), this->static_hosts.end(), tmp_iterator->second) != this->static_hosts.end();
 
                 for (auto &rewrite_pattern : this->uri_rewrite_config)
                 {
@@ -741,9 +739,9 @@ namespace mongols
         this->route_map.emplace_back(std::move(r));
     }
 
-    void http_server::set_static_host(const std::string &host)
+    void http_server::set_dynamic_uri_pattern(const std::regex &re)
     {
-        this->static_hosts.push_back(host);
+        this->dynamic_uri_pattern = re;
     }
 
 } // namespace mongols

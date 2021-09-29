@@ -378,8 +378,8 @@ namespace mongols
     {
         this->server->set_db_path(path);
     }
-    void web_server::set_static_host(const std::string &host)
+    void web_server::set_dynamic_uri_pattern(const std::regex &re)
     {
-        this->server->set_static_host(host);
+        this->server->set_dynamic_uri_pattern(re);
     }
 } // namespace mongols
