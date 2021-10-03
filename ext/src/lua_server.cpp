@@ -1,7 +1,7 @@
 #include "lua_server.hpp"
 #include "lib/lua/kaguya_ext.hpp"
-#include "server_bind_script.hpp"
-#include "util.hpp"
+#include <mongols/server_bind_script.hpp>
+#include <mongols/util.hpp>
 #include <functional>
 #include <regex>
 

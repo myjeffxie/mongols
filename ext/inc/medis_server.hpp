@@ -11,14 +11,14 @@
 #include <unordered_map>
 #include <vector>
 
-#include "lib/LRUCache11.hpp"
-#include "lib/leveldb/db.h"
-#include "lib/leveldb/options.h"
+#include <mongols/lib/LRUCache11.hpp>
+#include <mongols/lib/leveldb/db.h>
+#include <mongols/lib/leveldb/options.h>
+#include <mongols/lib/simple_resp.h>
+#include <mongols/tcp_threading_server.hpp>
 #include "lib/lua/kaguya.hpp"
-#include "lib/simple_resp.h"
 #include "lib/sqlite/sqlite3pp.h"
 #include "lib/sqlite/sqlite3ppext.h"
-#include "tcp_threading_server.hpp"
 
 namespace mongols
 {

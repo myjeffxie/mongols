@@ -2,8 +2,8 @@ SERVERSRC:=$(shell find . -maxdepth 1 -type f -name '*.cpp' )
 SERVEROBJ:=$(patsubst %.cpp,%.o,$(SERVERSRC))
 
 CXX=g++
-CXXFLAGS+=-std=c++11 -Wall -O3  `pkg-config --cflags mongols openssl`
-LDLIBS+=`pkg-config --libs mongols openssl`
+CXXFLAGS+=-std=c++11 -Wall -O3  `pkg-config --cflags mongols-ext mongols openssl`
+LDLIBS+=`pkg-config --libs mongols-ext mongols openssl`
 
 
 

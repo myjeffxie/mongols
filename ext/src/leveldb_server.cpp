@@ -3,9 +3,9 @@
 #include <regex>
 #include <unistd.h>
 
-#include "util.hpp"
+#include <mongols/util.hpp>
 
-#include "lib/leveldb/cache.h"
+#include <mongols/lib/leveldb/cache.h>
 
 #include "leveldb_server.hpp"
 

@@ -10,7 +10,7 @@ extern "C"
 #include "qjs/quickjs-crypto.hpp"
 #include "qjs/quickjs-hash.hpp"
 #include "qjs/quickjs-mongols.hpp"
-#include "util.hpp"
+#include <mongols/util.hpp>
 #include <functional>
 #include <regex>
 

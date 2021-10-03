@@ -25,11 +25,17 @@ A high performance network library for c++:
 
 ## install
 
+### libmongols
 `make clean && make -j2 && sudo make install && sudo ldconfig`
+### libmongols-ext
+`cd ext && make clean && make -j2 && sudo make install && sudo ldconfig`
 
 ## usage
 
+### libmongols
 `pkg-config --libs --cflags mongols openssl`
+### libmongols-ext
+`pkg-config --libs --cflags mongols-ext mongols openssl`
 
 ## binding
 

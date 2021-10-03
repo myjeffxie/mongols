@@ -10,11 +10,11 @@
 #include <unordered_map>
 #include <vector>
 
-#include "lib/leveldb/cache.h"
+#include <mongols/lib/leveldb/cache.h>
+#include <mongols/lib/jsoncons/json.hpp>
+#include <mongols/util.hpp>
 #include "lib/lua/kaguya_ext.hpp"
-#include "lib/jsoncons/json.hpp"
 #include "medis_server.hpp"
-#include "util.hpp"
 
 namespace mongols
 {

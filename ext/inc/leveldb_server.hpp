@@ -1,8 +1,8 @@
 #pragma once
 
-#include "http_server.hpp"
-#include "lib/leveldb/db.h"
-#include "lib/leveldb/options.h"
+#include <mongols/http_server.hpp>
+#include <mongols/lib/leveldb/db.h>
+#include <mongols/lib/leveldb/options.h>
 
 namespace mongols
 {
