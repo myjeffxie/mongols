@@ -19,8 +19,6 @@ CFLAGS+=-O3 -g -std=c11 -fPIC -DNDEBUG
 CXXFLAGS+=-O3 -g -std=c++11 -fPIC -DNDEBUG
 
 
-QUICKJS_VERSION:=$(shell cat src/qjs/VERSION)
-
 BOTHFLAGS=-Wall -Wextra -Werror \
 		  -Wno-sign-compare     \
 		  -Wno-missing-field-initializers \
@@ -42,20 +40,8 @@ BOTHFLAGS=-Wall -Wextra -Werror \
 
 BOTHFLAGS+=`pkg-config --cflags openssl`
 BOTHFLAGS+=-Iinc/mongols -Iinc/mongols/lib
-BOTHFLAGS+=-Iinc/mongols/lib/lua -DLUA_COMPAT_5_3 -DLUA_USE_LINUX -D_GNU_SOURCE -DKAGUYA_USE_CPP11
-BOTHFLAGS+=-DMULTIPLE_THREADS
-BOTHFLAGS+=-Iinc/mongols/lib/sqlite  -DSQLITE_THREADSAFE=1 \
-	-DSQLITE_ENABLE_FTS4  \
-	-DSQLITE_ENABLE_FTS5 \
-	-DSQLITE_ENABLE_JSON1  \
-	-DSQLITE_ENABLE_RTREE \
-	-DSQLITE_ENABLE_EXPLAIN_COMMENTS  \
-	-DHAVE_USLEEP \
-	-DHAVE_READLINE
 BOTHFLAGS+=-Iinc/mongols/lib/z
 BOTHFLAGS+=-Iinc/mongols/lib/hash
-BOTHFLAGS+=-Iinc/mongols/lib/qjs -D_GNU_SOURCE -DCONFIG_VERSION=\"$(QUICKJS_VERSION)\" -DCONFIG_BIGNUM
-BOTHFLAGS+=-Iinc/mongols/lib/hiredis
 BOTHFLAGS+=-Iinc/mongols/lib/leveldb -Isrc/leveldb -DLEVELDB_PLATFORM_POSIX -DLEVELDB_HAS_PORT_CONFIG_H
 BOTHFLAGS+=-Isrc/MPFDParser
 BOTHFLAGS+=-Isrc

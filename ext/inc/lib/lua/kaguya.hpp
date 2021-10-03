@@ -6751,7 +6751,11 @@ public:
     if (argnum < 0) {
       argnum = 0;
     }
+    #if LUA_VERSION_NUM > 503
     int result = lua_resume(thread, state, argnum,0);
+    #else
+    int result = lua_resume(thread, state, argnum);
+    #endif
     except::checkErrorAndThrow(result, thread);
     return detail::FunctionResultProxy::ReturnValue(thread, result, 1,
                                                     types::typetag<Result>());
