@@ -37,6 +37,7 @@ namespace mongols
                 .addProperty("content", &mongols::response::content)
                 .addFunction("set_header", &mongols::response::set_header)
                 .addFunction("set_session", &mongols::response::set_session)
+                .addFunction("set_cookie", &mongols::response::set_cookie)
                 .addFunction("set_cache", &mongols::response::set_cache));
 
         mongols::lua_ext(this->vm);
