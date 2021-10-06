@@ -47,4 +47,3 @@ namespace mongols
         std::unordered_map<std::string, std::string> session, cache;
     };
 } // namespace mongols
-

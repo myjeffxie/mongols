@@ -1,6 +1,5 @@
 #include "lua_server.hpp"
 #include "lib/lua/kaguya_ext.hpp"
-#include <mongols/server_bind_script.hpp>
 #include <mongols/util.hpp>
 #include <functional>
 #include <regex>
@@ -15,30 +14,30 @@ namespace mongols
         this->server = new http_server(host, port, timeout, buffer_size, thread_size, max_body_size, max_event_size);
 
         this->vm["mongols_request"].setClass(
-            kaguya::UserdataMetatable<server_bind_script_request>()
-                .setConstructors<server_bind_script_request()>()
-                .addFunction("uri", &mongols::server_bind_script_request::uri)
-                .addFunction("method", &mongols::server_bind_script_request::method)
-                .addFunction("client", &mongols::server_bind_script_request::client)
-                .addFunction("user_agent", &mongols::server_bind_script_request::user_agent)
-                .addFunction("param", &mongols::server_bind_script_request::param)
-                .addFunction("has_header", &mongols::server_bind_script_request::has_header)
-                .addFunction("has_cookie", &mongols::server_bind_script_request::has_cookie)
-                .addFunction("has_form", &mongols::server_bind_script_request::has_form)
-                .addFunction("has_cache", &mongols::server_bind_script_request::has_cache)
-                .addFunction("has_session", &mongols::server_bind_script_request::has_session)
-                .addFunction("get_header", &mongols::server_bind_script_request::get_header)
-                .addFunction("get_cookie", &mongols::server_bind_script_request::get_cookie)
-                .addFunction("get_form", &mongols::server_bind_script_request::get_form)
-                .addFunction("get_session", &mongols::server_bind_script_request::get_session)
-                .addFunction("get_cache", &mongols::server_bind_script_request::get_cache));
+            kaguya::UserdataMetatable<request>()
+                .setConstructors<request()>()
+                .addProperty("uri", &mongols::request::uri)
+                .addProperty("method", &mongols::request::method)
+                .addProperty("client", &mongols::request::client)
+                .addProperty("user_agent", &mongols::request::user_agent)
+                .addProperty("param", &mongols::request::param)
+                .addFunction("has_header", &mongols::request::has_header)
+                .addFunction("has_cookie", &mongols::request::has_cookie)
+                .addFunction("has_form", &mongols::request::has_form)
+                .addFunction("has_cache", &mongols::request::has_cache)
+                .addFunction("has_session", &mongols::request::has_session)
+                .addFunction("get_header", &mongols::request::get_header)
+                .addFunction("get_cookie", &mongols::request::get_cookie)
+                .addFunction("get_form", &mongols::request::get_form)
+                .addFunction("get_session", &mongols::request::get_session)
+                .addFunction("get_cache", &mongols::request::get_cache));
         this->vm["mongols_response"].setClass(
-            kaguya::UserdataMetatable<server_bind_script_response>()
-                .addFunction("status", &mongols::server_bind_script_response::status)
-                .addFunction("content", &mongols::server_bind_script_response::content)
-                .addFunction("header", &mongols::server_bind_script_response::header)
-                .addFunction("session", &mongols::server_bind_script_response::session)
-                .addFunction("cache", &mongols::server_bind_script_response::cache));
+            kaguya::UserdataMetatable<response>()
+                .addProperty("status", &mongols::response::status)
+                .addProperty("content", &mongols::response::content)
+                .addFunction("set_header", &mongols::response::set_header)
+                .addFunction("set_session", &mongols::response::set_session)
+                .addFunction("set_cache", &mongols::response::set_cache));
 
         mongols::lua_ext(this->vm);
     }
@@ -72,16 +71,13 @@ namespace mongols
 
     void lua_server::work(const mongols::request &req, mongols::response &res)
     {
-        mongols::server_bind_script_request bind_req;
-        bind_req.init(const_cast<mongols::request *>(&req));
-        mongols::server_bind_script_response bind_res;
-        bind_res.init(&res);
-        this->vm["mongols_req"] = &bind_req;
-        this->vm["mongols_res"] = &bind_res;
-        this->vm.setErrorHandler([&](int errCode, const char *szError) {
-            res.content = szError;
-            res.status = 500;
-        });
+        this->vm["mongols_req"] = &req;
+        this->vm["mongols_res"] = &res;
+        this->vm.setErrorHandler([&](int errCode, const char *szError)
+                                 {
+                                     res.content = szError;
+                                     res.status = 500;
+                                 });
         this->vm.dofile(this->enable_bootstrap ? this->root_path + "/index.lua" : this->root_path + req.uri);
     }
 
