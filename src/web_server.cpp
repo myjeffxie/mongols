@@ -153,12 +153,19 @@ namespace mongols
 
     std::string web_server::get_mime_type(const std::string &path)
     {
-        std::string::size_type p;
-        if (this->mime_type.empty() || (p = path.find_last_of(".")) == std::string::npos)
+        std::string::size_type p = path.find_last_of(".");
+
+        if (p == std::string::npos || this->mime_type.empty())
         {
             return "application/octet-stream";
         }
-        return this->mime_type[path.substr(p + 1)];
+        std::string ext = path.substr(p + 1);
+        if (this->mime_type.find(ext) == this->mime_type.end())
+        {
+            return "application/octet-stream";
+        }
+
+        return this->mime_type[ext];
     }
 
     void web_server::set_root_path(const std::string &host, const std::string &path)
