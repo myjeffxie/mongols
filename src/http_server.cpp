@@ -363,7 +363,7 @@ namespace mongols
                 {
                     if (std::regex_match(req.uri, rewrite_pattern.first))
                     {
-                        req.uri = regex_replace(req.uri, rewrite_pattern.first, rewrite_pattern.second);
+                        req.uri = std::move(regex_replace(req.uri, rewrite_pattern.first, rewrite_pattern.second));
                         break;
                     }
                 }
