@@ -44,7 +44,7 @@ namespace mongols
                                                            "</html>");
 
     web_server::web_server(const std::string &host, int port, int timeout, size_t buffer_size, size_t thread_size, size_t max_body_size, int max_event_size)
-        : last_cb(nullptr), root_path(), mime_type(), file_mmap(), server(0), list_directory(false), enable_mmap(false)
+        : last_cb(nullptr), root_path(), mime_type(), redirect_map(), file_mmap(), server(0), list_directory(false), enable_mmap(false)
     {
         this->server = new http_server(host, port, timeout, buffer_size, thread_size, max_body_size, max_event_size);
     }
@@ -137,8 +137,27 @@ namespace mongols
                         res.content = std::move(this->create_list_directory_response(req, path));
                         res.status = 200;
                     }
+                    else if (this->redirect_map.find(host) != this->redirect_map.end())
+                    {
+                        bool found = false;
+                        for (const auto &item : this->redirect_map[host])
+                        {
+                            if (std::regex_match(req.uri, item.first))
+                            {
+                                res.headers.insert(std::make_pair("Location", item.second));
+                                res.status = 302;
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found)
+                        {
+                            goto http_403;
+                        }
+                    }
                     else
                     {
+                    http_403:
                         res.status = 403;
                         res.content = std::move("Forbidden");
                     }
@@ -308,8 +327,27 @@ namespace mongols
                         res.content = std::move(this->create_list_directory_response(req, path));
                         res.status = 200;
                     }
+                    else if (this->redirect_map.find(host) != this->redirect_map.end())
+                    {
+                        bool found = false;
+                        for (const auto &item : this->redirect_map[host])
+                        {
+                            if (std::regex_match(req.uri, item.first))
+                            {
+                                res.headers.insert(std::make_pair("Location", item.second));
+                                res.status = 302;
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found)
+                        {
+                            goto http_403;
+                        }
+                    }
                     else
                     {
+                    http_403:
                         res.status = 403;
                         res.content = std::move("Forbidden");
                     }
@@ -388,5 +426,16 @@ namespace mongols
     void web_server::set_dynamic_uri_pattern(const std::regex &re)
     {
         this->server->set_dynamic_uri_pattern(re);
+    }
+    void web_server::set_redirect_map(const std::string &host, const std::pair<std::regex, std::string> &p)
+    {
+        if (this->redirect_map.find(host) != this->redirect_map.end())
+        {
+            this->redirect_map[host].push_back(p);
+        }
+        else
+        {
+            this->redirect_map[host] = {p};
+        }
     }
 } // namespace mongols

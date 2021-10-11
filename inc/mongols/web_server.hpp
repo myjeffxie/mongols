@@ -36,12 +36,14 @@ namespace mongols
         void set_cache_expires(long long);
         void set_db_path(const std::string &);
         void set_dynamic_uri_pattern(const std::regex &);
+        void set_redirect_map(const std::string&,const std::pair<std::regex, std::string>&);
 
     private:
         static std::string dir_index_template;
         last_cb_t last_cb;
         std::unordered_map<std::string, std::string> root_path;
         std::unordered_map<std::string, std::string> mime_type;
+        std::unordered_map<std::string, std::vector<std::pair<std::regex, std::string>>> redirect_map;
         std::unordered_map<std::string, std::pair<char *, struct stat>> file_mmap;
         http_server *server;
         bool list_directory, enable_mmap;
