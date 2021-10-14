@@ -290,7 +290,7 @@ namespace mongols
                 std::shared_ptr<MPFD::Parser> POSTParser(new MPFD::Parser());
                 POSTParser->SetTempDirForFileUpload(TEMP_DIRECTORY);
                 POSTParser->SetUploadedFilesStorage(MPFD::Parser::StoreUploadedFilesInFilesystem);
-                POSTParser->SetMaxCollectedDataLength(this->server->get_buffer_size());
+                POSTParser->SetMaxCollectedDataLength(this->max_body_size);
                 POSTParser->SetContentType(req.headers["Content-Type"]);
                 POSTParser->AcceptSomeData(body.c_str(), body.size());
                 auto fields = POSTParser->GetFieldsMap();
