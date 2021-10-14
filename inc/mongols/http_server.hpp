@@ -66,7 +66,7 @@ namespace mongols
         std::string create_response(mongols::response &res, bool b);
         std::string get_status_text(int status);
         std::string tolower(std::string &);
-        void upload(mongols::request &, const std::string &);
+        bool upload(mongols::request &, const std::string &);
         std::string serialize(const std::unordered_map<std::string, std::string> &);
         void deserialize(const std::string &, std::unordered_map<std::string, std::string> &);
         bool deflate_compress(std::string &);

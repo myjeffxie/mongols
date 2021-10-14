@@ -281,8 +281,13 @@ namespace mongols
         return str;
     }
 
-    void http_server::upload(mongols::request &req, const std::string &body)
+    bool http_server::upload(mongols::request &req, const std::string &body)
     {
+        bool ret = false;
+        if (body.size() != std::stol(req.headers["Content-Length"]))
+        {
+            return ret;
+        }
         try
         {
             if ((is_dir(TEMP_DIRECTORY) || mkdir(TEMP_DIRECTORY, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == 0))
@@ -314,11 +319,14 @@ namespace mongols
                         req.form.insert(std::make_pair(item.first, temp_file));
                     }
                 }
+                ret = true;
             }
         }
         catch (MPFD::Exception &err)
         {
+            std::cout << err.GetError() << "\n";
         }
+        return ret;
     }
 
     std::string http_server::work(
@@ -485,7 +493,12 @@ namespace mongols
                 {
                     if (tmp_iterator->second.find(form_multipart_type) != std::string::npos)
                     {
-                        this->upload(req, body);
+                        if (!this->upload(req, body))
+                        {
+                            res.status = 500;
+                            res.content = "Upload is failed\n";
+                            return this->create_response(res, CLOSE_CONNECTION);
+                        }
                         body.clear();
                     }
                     else if (tmp_iterator->second.find(form_urlencoded_type) != std::string::npos)
