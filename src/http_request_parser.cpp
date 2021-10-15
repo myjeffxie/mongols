@@ -17,7 +17,7 @@ namespace mongols
     int http_request_parser::on_body(http_parser *p, const char *buf, size_t len)
     {
         http_request_parser::tmp_ *THIS = (http_request_parser::tmp_ *)p->data;
-        THIS->parser->body.append(buf, len);
+        THIS->parser->body.assign(buf, len);
         return 0;
     }
 
