@@ -59,12 +59,12 @@ BOTHFLAGS+=-Isrc
 
 
 CFLAGS+=$(BOTHFLAGS)
-CFLAGS+=`pkg-config --cflags openssl`
+CFLAGS+=`pkg-config --cflags openssl zlib`
 CXXFLAGS+=$(BOTHFLAGS)
-CXXFLAGS+=`pkg-config --cflags mongols openssl`
+CXXFLAGS+=`pkg-config --cflags mongols openssl zlib`
 
 LDLIBS+=-lpthread -ldl -lrt -lm -lstdc++
-LDLIBS+=`pkg-config --libs mongols openssl`
+LDLIBS+=`pkg-config --libs mongols openssl zlib`
 LDFLAGS+=-shared
 
 

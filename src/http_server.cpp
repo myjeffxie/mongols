@@ -5,13 +5,14 @@
 #include <sstream>
 #include <sys/stat.h>
 #include <utility>
+#include <zlib.h>
+
 
 #include "http_server.hpp"
 #include "MPFDParser/Parser.h"
 #include "lib/hash/hash_engine.hpp"
 #include "lib/leveldb/cache.h"
 #include "lib/jsoncons/json.hpp"
-#include "lib/z/zlib.h"
 #include "tcp_threading_server.hpp"
 #include "util.hpp"
 #include "version.hpp"

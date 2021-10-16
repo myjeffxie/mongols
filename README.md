@@ -33,9 +33,9 @@ A high performance network library for c++:
 ## usage
 
 ### libmongols
-`pkg-config --libs --cflags mongols openssl`
+`pkg-config --libs --cflags mongols openssl zlib`
 ### libmongols-ext
-`pkg-config --libs --cflags mongols-ext mongols openssl`
+`pkg-config --libs --cflags mongols-ext mongols openssl zlib`
 
 ## binding
 

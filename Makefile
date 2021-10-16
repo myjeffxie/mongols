@@ -38,9 +38,8 @@ BOTHFLAGS=-Wall -Wextra -Werror \
 
 
 
-BOTHFLAGS+=`pkg-config --cflags openssl`
+BOTHFLAGS+=`pkg-config --cflags openssl zlib`
 BOTHFLAGS+=-Iinc/mongols -Iinc/mongols/lib
-BOTHFLAGS+=-Iinc/mongols/lib/z
 BOTHFLAGS+=-Iinc/mongols/lib/hash
 BOTHFLAGS+=-Iinc/mongols/lib/leveldb -Isrc/leveldb -DLEVELDB_PLATFORM_POSIX -DLEVELDB_HAS_PORT_CONFIG_H
 BOTHFLAGS+=-Isrc/MPFDParser
@@ -51,7 +50,7 @@ CXXFLAGS+=$(BOTHFLAGS)
 
 
 LDLIBS+=-lpthread -ldl -lrt -lm -lstdc++
-LDLIBS+=`pkg-config --libs openssl`
+LDLIBS+=`pkg-config --libs openssl zlib`
 LDFLAGS+=-shared
 
 
