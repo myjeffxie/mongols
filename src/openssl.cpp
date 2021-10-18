@@ -15,15 +15,30 @@ namespace mongols
     openssl::openssl(const std::string &crt_file, const std::string &key_file, openssl::version_t v, const std::string &ciphers, long flags)
         : ok(false), crt_file(crt_file), key_file(key_file), ctx(0), v(v)
     {
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER >= 0x10100003L
+
+        if (OPENSSL_init_ssl(OPENSSL_INIT_LOAD_CONFIG, NULL) == 0)
+        {
+            std::cout << "init ssl failed.\n";
+        }
+
+        /*
+         * OPENSSL_init_ssl() may leave errors in the error queue
+         * while returning success
+         */
+
+        ERR_clear_error();
+
+#else
+
+        OPENSSL_config(NULL);
+
         SSL_library_init();
         SSL_load_error_strings();
-        OpenSSL_add_all_algorithms();
-#else
-        OPENSSL_init_ssl(0, NULL);
-#endif
 
-        ERR_load_BIO_strings();
+        OpenSSL_add_all_algorithms();
+
+#endif
 
         switch (this->v)
         {
@@ -56,8 +71,87 @@ namespace mongols
             break;
         }
 
+        // this->ctx = SSL_CTX_new(SSLv23_method());
+
         if (this->ctx)
         {
+#ifdef SSL_OP_MICROSOFT_SESS_ID_BUG
+            SSL_CTX_set_options(this->ctx, SSL_OP_MICROSOFT_SESS_ID_BUG);
+#endif
+
+#ifdef SSL_OP_NETSCAPE_CHALLENGE_BUG
+            SSL_CTX_set_options(this->ctx, SSL_OP_NETSCAPE_CHALLENGE_BUG);
+#endif
+
+            /* server side options */
+
+#ifdef SSL_OP_SSLREF2_REUSE_CERT_TYPE_BUG
+            SSL_CTX_set_options(this->ctx, SSL_OP_SSLREF2_REUSE_CERT_TYPE_BUG);
+#endif
+
+#ifdef SSL_OP_MICROSOFT_BIG_SSLV3_BUFFER
+            SSL_CTX_set_options(this->ctx, SSL_OP_MICROSOFT_BIG_SSLV3_BUFFER);
+#endif
+
+#ifdef SSL_OP_SSLEAY_080_CLIENT_DH_BUG
+            SSL_CTX_set_options(this->ctx, SSL_OP_SSLEAY_080_CLIENT_DH_BUG);
+#endif
+
+#ifdef SSL_OP_TLS_D5_BUG
+            SSL_CTX_set_options(this->ctx, SSL_OP_TLS_D5_BUG);
+#endif
+
+#ifdef SSL_OP_TLS_BLOCK_PADDING_BUG
+            SSL_CTX_set_options(this->ctx, SSL_OP_TLS_BLOCK_PADDING_BUG);
+#endif
+
+#ifdef SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS
+            SSL_CTX_set_options(this->ctx, SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS);
+#endif
+
+            SSL_CTX_set_options(this->ctx, SSL_OP_SINGLE_DH_USE);
+
+#if OPENSSL_VERSION_NUMBER >= 0x009080dfL
+            /* only in 0.9.8m+ */
+            SSL_CTX_clear_options(this->ctx,
+                                  SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1);
+#endif
+
+#ifdef SSL_CTX_set_min_proto_version
+            SSL_CTX_set_min_proto_version(this->ctx, 0);
+            SSL_CTX_set_max_proto_version(this->ctx, TLS1_2_VERSION);
+#endif
+
+#ifdef TLS1_3_VERSION
+            SSL_CTX_set_min_proto_version(this->ctx, 0);
+            SSL_CTX_set_max_proto_version(this->ctx, TLS1_3_VERSION);
+#endif
+
+#ifdef SSL_OP_NO_COMPRESSION
+            SSL_CTX_set_options(this->ctx, SSL_OP_NO_COMPRESSION);
+#endif
+
+#ifdef SSL_OP_NO_ANTI_REPLAY
+            SSL_CTX_set_options(this->ctx, SSL_OP_NO_ANTI_REPLAY);
+#endif
+
+#ifdef SSL_OP_NO_CLIENT_RENEGOTIATION
+            SSL_CTX_set_options(this->ctx, SSL_OP_NO_CLIENT_RENEGOTIATION);
+#endif
+
+#ifdef SSL_OP_IGNORE_UNEXPECTED_EOF
+            SSL_CTX_set_options(this->ctx, SSL_OP_IGNORE_UNEXPECTED_EOF);
+#endif
+
+#ifdef SSL_MODE_RELEASE_BUFFERS
+            SSL_CTX_set_mode(this->ctx, SSL_MODE_RELEASE_BUFFERS);
+#endif
+
+#ifdef SSL_MODE_NO_AUTO_CHAIN
+            SSL_CTX_set_mode(this->ctx, SSL_MODE_NO_AUTO_CHAIN);
+#endif
+
+            SSL_CTX_set_read_ahead(this->ctx, 1);
             SSL_CTX_set_ecdh_auto(this->ctx, 1024);
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
             this->ctx->freelist_max_len = 0;
@@ -117,25 +211,11 @@ namespace mongols
     {
         if (SSL_set_fd(ssl, fd))
         {
-            bool reconnectioned = false;
-        ssl_accept:
-            int ret = SSL_accept(ssl);
-            if (ret > 0)
-            {
-                return true;
-            }
-            else
-            {
-                int err = SSL_get_error(ssl, ret);
-                if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
-                {
-                    if (!reconnectioned)
-                    {
-                        reconnectioned = true;
-                        goto ssl_accept;
-                    }
-                }
-            }
+            SSL_set_accept_state(ssl);
+#ifdef SSL_OP_NO_RENEGOTIATION
+            SSL_set_options(ssl, SSL_OP_NO_RENEGOTIATION);
+#endif
+            return true;
         }
         return false;
     }
