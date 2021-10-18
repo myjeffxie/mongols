@@ -31,7 +31,7 @@ namespace mongols
 
 #else
 
-        OPENSSL_config(NULL);
+        //OPENSSL_config(NULL);
 
         SSL_library_init();
         SSL_load_error_strings();
