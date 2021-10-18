@@ -85,6 +85,10 @@ namespace mongols
         if (iter != this->root_path.end())
         {
             std::string path = std::move(this->root_path[host] + req.uri);
+            if (this->list_directory)
+            {
+                path.append("/index.html");
+            }
             struct stat st;
             if (stat(path.c_str(), &st) == 0)
             {
@@ -144,7 +148,7 @@ namespace mongols
                         {
                             if (std::regex_match(req.uri, item.first))
                             {
-                                res.headers.insert(std::make_pair("Location", item.second));
+                                res.headers.insert(std::make_pair("Location", regex_replace(req.uri, item.first, item.second)));
                                 res.status = 302;
                                 found = true;
                                 break;
@@ -334,7 +338,7 @@ namespace mongols
                         {
                             if (std::regex_match(req.uri, item.first))
                             {
-                                res.headers.insert(std::make_pair("Location", item.second));
+                                res.headers.insert(std::make_pair("Location", regex_replace(req.uri, item.first, item.second)));
                                 res.status = 302;
                                 found = true;
                                 break;
