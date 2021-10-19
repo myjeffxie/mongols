@@ -28,7 +28,7 @@ namespace mongols
 
     int http_server::zip_level = Z_BEST_SPEED;
     size_t http_server::zip_min_size = 1024, http_server::zip_max_size = 307200; /*1kb<size<300kb*/
-    std::list<std::string> http_server::zip_mime_type = {"text/html", "text/css", "text/plain", "application/x-javascript", "text/xml"};
+    std::list<std::string> http_server::zip_mime_type = {"text/html", "text/css", "text/plain", "application/javascript", "text/xml", "image/jpeg"};
 
     http_server::http_server(const std::string &host, int port, int timeout, size_t buffer_size, size_t thread_size, size_t max_body_size, int max_event_size)
         : server(0), max_body_size(max_body_size), lru_cache_size(1024), db(0), db_options(), session_expires(3600), cache_expires(3600), lru_cache_expires(300), enable_session(false), enable_cache(false), enable_lru_cache(false), openssl_is_ok(false), db_path(LEVELDB_PATH), uri_rewrite_config(), lru_cache(0), route_map(), dynamic_uri_pattern(R"(.*\.(jsp|php|do|json|xml)$)")
