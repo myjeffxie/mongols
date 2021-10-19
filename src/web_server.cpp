@@ -286,6 +286,8 @@ namespace mongols
                         }
                         res.status = 200;
                         res.headers.find("Content-Type")->second = std::move(this->get_mime_type(path));
+                        time_t now = time(0);
+                        res.headers.insert(std::move(std::make_pair(std::move("Last-Modified"), mongols::http_time(&now))));
                         res.content.assign(iter->second.first, iter->second.second.st_size);
                     }
                     else
@@ -307,6 +309,8 @@ namespace mongols
                                 {
                                     res.status = 200;
                                     res.headers.find("Content-Type")->second = std::move(this->get_mime_type(path));
+                                    time_t now = time(0);
+                                    res.headers.insert(std::move(std::make_pair(std::move("Last-Modified"), mongols::http_time(&now))));
                                     res.content.assign(mmap_ptr, st.st_size);
                                     this->file_mmap[mmap_key] = std::move(std::make_pair(mmap_ptr, st));
                                 }
