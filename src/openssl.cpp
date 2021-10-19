@@ -22,16 +22,9 @@ namespace mongols
             std::cout << "init ssl failed.\n";
         }
 
-        /*
-         * OPENSSL_init_ssl() may leave errors in the error queue
-         * while returning success
-         */
-
         ERR_clear_error();
 
 #else
-
-        //OPENSSL_config(NULL);
 
         SSL_library_init();
         SSL_load_error_strings();

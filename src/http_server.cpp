@@ -7,7 +7,6 @@
 #include <utility>
 #include <zlib.h>
 
-
 #include "http_server.hpp"
 #include "MPFDParser/Parser.h"
 #include "lib/hash/hash_engine.hpp"
@@ -404,7 +403,7 @@ namespace mongols
                 }
 
                 std::string cache_k = std::move(hash_engine::md5(req.method + req.uri + "?" + req.param));
-                if (this->enable_lru_cache && req.method == "GET")
+                if (!is_static_host && this->enable_lru_cache && req.method == "GET")
                 {
                     if (this->lru_cache->contains(cache_k))
                     {
@@ -600,7 +599,7 @@ namespace mongols
                     }
                     this->db->Put(leveldb::WriteOptions(), cache_k, this->serialize(*ptr));
                 }
-                if (this->enable_lru_cache && this->lru_cache_expires > 0 && req.method == "GET" && res.status == 200)
+                if (!is_static_host && this->enable_lru_cache && this->lru_cache_expires > 0 && req.method == "GET" && res.status == 200)
                 {
                     std::shared_ptr<cache_t> cache_ele = std::make_shared<cache_t>();
                     cache_ele->content = res.content;
