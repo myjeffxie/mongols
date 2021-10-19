@@ -84,7 +84,7 @@ namespace mongols
         auto iter = this->root_path.find(host);
         if (iter != this->root_path.end())
         {
-            std::string path = std::move(this->root_path[host] + req.uri);
+            std::string path = std::move(iter->second + req.uri);
             if (this->list_directory)
             {
                 path.append("/index.html");
@@ -269,7 +269,7 @@ namespace mongols
         auto iter = this->root_path.find(host);
         if (iter != this->root_path.end())
         {
-            std::string path = std::move(this->root_path[host] + req.uri), mmap_key = std::move(hash_engine::md5(path));
+            std::string path = std::move(iter->second + req.uri), mmap_key = std::move(hash_engine::md5(path));
             std::unordered_map<std::string, std::pair<char *, struct stat>>::const_iterator iter;
             struct stat st;
             if (stat(path.c_str(), &st) == 0)
