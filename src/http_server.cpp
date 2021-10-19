@@ -599,7 +599,7 @@ namespace mongols
                     }
                     this->db->Put(leveldb::WriteOptions(), cache_k, this->serialize(*ptr));
                 }
-                if (!is_static_host && this->enable_lru_cache && this->lru_cache_expires > 0 && req.method == "GET" && res.status == 200)
+                if (!is_static_host && this->enable_lru_cache && this->lru_cache_expires > 0 && req.method == "GET" && res.status == 200 && !req.param.empty())
                 {
                     std::shared_ptr<cache_t> cache_ele = std::make_shared<cache_t>();
                     cache_ele->content = res.content;
