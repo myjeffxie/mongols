@@ -150,6 +150,7 @@ namespace mongols
                             {
                                 res.headers.insert(std::make_pair("Location", regex_replace(req.uri, item.first, item.second)));
                                 res.status = 302;
+                                res.content.clear();
                                 found = true;
                                 break;
                             }
@@ -340,6 +341,7 @@ namespace mongols
                             {
                                 res.headers.insert(std::make_pair("Location", regex_replace(req.uri, item.first, item.second)));
                                 res.status = 302;
+                                res.content.clear();
                                 found = true;
                                 break;
                             }
