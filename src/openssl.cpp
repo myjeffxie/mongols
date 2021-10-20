@@ -149,7 +149,12 @@ namespace mongols
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
             this->ctx->freelist_max_len = 0;
 #endif
-            SSL_CTX_set_mode(this->ctx, SSL_MODE_RELEASE_BUFFERS | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER | SSL_MODE_AUTO_RETRY|SSL_MODE_ASYNC);
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+            SSL_CTX_set_mode(this->ctx, SSL_MODE_RELEASE_BUFFERS | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER | SSL_MODE_AUTO_RETRY | SSL_MODE_ASYNC);
+#else
+            SSL_CTX_set_mode(this->ctx, SSL_MODE_RELEASE_BUFFERS | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER | SSL_MODE_AUTO_RETRY);
+#endif
             SSL_CTX_set_options(this->ctx, flags);
             SSL_CTX_set_cipher_list(this->ctx, ciphers.c_str());
 
@@ -236,7 +241,11 @@ namespace mongols
         this->data = SSL_new(ctx);
         if (this->data)
         {
-            SSL_set_mode(this->data, SSL_MODE_RELEASE_BUFFERS | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER | SSL_MODE_AUTO_RETRY|SSL_MODE_ASYNC);
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+            SSL_set_mode(this->data, SSL_MODE_RELEASE_BUFFERS | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER | SSL_MODE_AUTO_RETRY | SSL_MODE_ASYNC);
+#else
+            SSL_set_mode(this->data, SSL_MODE_RELEASE_BUFFERS | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER | SSL_MODE_AUTO_RETRY);
+#endif
         }
     }
 
