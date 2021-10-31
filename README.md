@@ -1,5 +1,7 @@
 https://bitbucket.org/taishiling/mongols/src/master/
 
+该项目即将过时。
+
 # mongols
 
 A high performance network library for c++:
