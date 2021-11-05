@@ -1,6 +1,6 @@
 https://bitbucket.org/taishiling/mongols/src/master/
 
-该项目即将过时。
+该项目已经过时。
 
 # mongols
 
